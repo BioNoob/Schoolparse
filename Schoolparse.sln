@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Schoolparse", "Schoolparse.csproj", "{142E5927-5224-4808-BC5A-B96A6704BBBF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{142E5927-5224-4808-BC5A-B96A6704BBBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{142E5927-5224-4808-BC5A-B96A6704BBBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{142E5927-5224-4808-BC5A-B96A6704BBBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{142E5927-5224-4808-BC5A-B96A6704BBBF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1280C22-00F5-4F12-9348-17D96AFBD0D3}
+	EndGlobalSection
+EndGlobal
