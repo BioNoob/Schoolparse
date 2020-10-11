@@ -566,6 +566,7 @@
             this.stop_btn.TabIndex = 15;
             this.stop_btn.Text = "Стоп";
             this.stop_btn.UseVisualStyleBackColor = true;
+            this.stop_btn.Click += new System.EventHandler(this.stop_btn_Click);
             // 
             // time_out_num
             // 

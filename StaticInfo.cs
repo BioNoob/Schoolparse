@@ -25,7 +25,7 @@ namespace Schoolparse
     }
     public class DataCalender
     {
-        public List<ItemSc> data { get; set; }
+        public List<ItemDrive> data { get; set; }
     }
     public partial class DataUser
     {
@@ -35,7 +35,7 @@ namespace Schoolparse
         [JsonProperty("data")]
         public ItemUser Data { get; set; }
     }
-    public class ItemSc
+    public class ItemDrive
     {
         public string Key { get; set; }
         public int Id { get; set; }

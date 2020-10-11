@@ -27,6 +27,7 @@ namespace Schoolparse
         //string api_hash = "71b59f552c59293894b11ee9479ff72f";
         TelegramBotClient botClient;
         //string hash;
+        bool fl_to_stop = false;
 
         public StartForm()
         {
@@ -39,6 +40,7 @@ namespace Schoolparse
             this.Visible = false;
             AutoSchoolAuth au = new AutoSchoolAuth();
             au.ShowDialog();
+            stop_btn.Enabled = false;
         }
 
         private void StaticInfo_Ev_LoginSchool(DataUser dp)
@@ -92,6 +94,11 @@ namespace Schoolparse
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
         private void button1_Click(object sender, EventArgs e)
         {
+            fl_to_stop = false;
+            button1.Enabled = false;
+            stop_btn.Enabled = true;
+            use_telegram_chk.Enabled = false;
+            not_use_sound_chk.Enabled = false;
             if (start_time_dtp.Value > DateTime.Now)
             {
                 if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -111,6 +118,19 @@ namespace Schoolparse
             {
                 while (true)
                 {
+                    if (fl_to_stop)
+                    {
+                        BeginInvoke(new Action(() =>
+                        {
+                            button1.Enabled = true;
+                            use_telegram_chk.Enabled = true;
+                            not_use_sound_chk.Enabled = true;
+                            stop_btn.Enabled = false;
+                            return;
+                        }
+                        ));
+                    }
+
                     i++;
                     wc.Headers.Clear();
                     wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
@@ -198,7 +218,7 @@ namespace Schoolparse
                     }
                 }
             }
-            if(aa != DialogResult.OK)
+            if (aa != DialogResult.OK)
             {
                 use_telegram_chk.CheckedChanged -= use_telegram_chk_CheckedChanged;
                 use_telegram_chk.Checked = false;
@@ -227,6 +247,11 @@ namespace Schoolparse
             {
                 selected_autodrom_list.Items.Remove(autodrom_list_chk.Items[e.Index]);
             }
+        }
+
+        private void stop_btn_Click(object sender, EventArgs e)
+        {
+            fl_to_stop = true;
         }
     }
 }
