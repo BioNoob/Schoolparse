@@ -23,10 +23,10 @@ namespace Schoolparse
         System.Media.SoundPlayer smm = new System.Media.SoundPlayer();
         WebClient wc = new WebClient();
         TelegramClient client;
-        int api_id = 1929836;
-        string api_hash = "71b59f552c59293894b11ee9479ff72f";
+        //int api_id = 1929836;
+        //string api_hash = "71b59f552c59293894b11ee9479ff72f";
         TelegramBotClient botClient;
-        string hash;
+        //string hash;
 
         public StartForm()
         {
@@ -61,12 +61,6 @@ namespace Schoolparse
                 {
                     autodrom_list_chk.Items.Add(item);
                 }
-
-                //foreach (var item in dta.Autodromes)
-                //{
-                //    //autodrom_list.
-                //    autodrom_list.Items.Add(item);
-                //}
                 this.Visible = true;
             }
         }
@@ -95,160 +89,143 @@ namespace Schoolparse
             if (client.IsConnected && client.IsUserAuthorized())
                 telegram_status_lbl.Text = "Телеграм успешно подключен";
         }
-
+        //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
         private void button1_Click(object sender, EventArgs e)
         {
+            if (start_time_dtp.Value > DateTime.Now)
+            {
+                if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
+            DateTime dt_telegram_start = DateTime.Now;
+            string dt_st = start_time_dtp.Value.ToString("yyyy-MM-dd");
+            string dt_en = end_time_dtp.Value.ToString("yyyy-MM-dd");
+            string famtecher = fio_teacher_txt.Text;
+            if (only_end_chk.Checked)
+                dt_st = dt_en;
             int i = 0;
+            DataCalender zs = new DataCalender();
             Task.Run(async () =>
             {
                 while (true)
                 {
                     i++;
-                    var t = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
-                    var zs = JsonConvert.DeserializeObject<DataCalender>(t);
-                    var bb = zs.data.Where(q => q.Completed != true && q.start_date.DayOfYear > DateTime.Now.DayOfYear).ToList();
+                    wc.Headers.Clear();
+                    wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
+                    var t = wc.DownloadString($"https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from={dt_st}&to={dt_en}");
+                    zs = JsonConvert.DeserializeObject<DataCalender>(t);
+
+                    var bb = zs.data.Where(q => q.Completed != true && q.start_date.DayOfYear > start_time_dtp.Value.DayOfYear).ToList();
+                    bb = bb.Where(q => q.EmployeeName.Contains(famtecher)).ToList();
+                    if (selected_autodrom_list.Items.Count > 0)
+                    {
+                        //выборка из листа указанных площадок по айди
+                        foreach (var item in selected_autodrom_list.Items)
+                        {
+                            var ii = item as ItemUser.Autodrome;
+                            bb = bb.Where(q => q.autodrom == ii.Id).ToList();
+                        }
+                    }
                     if (bb.Count > 0)
                     {
                         //AALLLEEERT!!
-                        smm.Stop();
-                        smm.Play();
-                        var updbot = await botClient.GetUpdatesAsync();
-                        var userdialog = updbot.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
-                        var userdialog_id = userdialog.Message.Chat.Id;
-                        await botClient.SendTextMessageAsync(userdialog_id, "Ну првет сталкер)");
+                        if (!not_use_sound_chk.Checked)
+                        {
+                            smm.Stop();
+                            smm.Play();
+                        }
+                        if (use_telegram_chk.Checked)
+                        {
+                            var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
+                            if ((int)teleg_time >= telega_time_out_num.Value)
+                            {
+                                var updbot = await botClient.GetUpdatesAsync();
+                                var userdialog = updbot.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
+                                var userdialog_id = userdialog.Message.Chat.Id;
+                                var str = "";
+                                foreach (var item in bb)
+                                {
+                                    str += $"{item}\n";
+                                }
+                                await botClient.SendTextMessageAsync(userdialog_id, $"Внимание найдены доступные записи!\n");
+                                await botClient.SendTextMessageAsync(userdialog_id, str);
+                                dt_telegram_start = DateTime.Now;
+                            }
+                        }
                     }
                     BeginInvoke(new Action(() =>
                     {
-                        listBox1.Items.Clear();
+                        all_res_list.Items.Clear();
                         foreach (var item in zs.data)
                         {
-                            listBox1.Items.Add(item);
+                            all_res_list.Items.Add(item);
                         }
                         counter_lbl.Text = i.ToString();
                         if (bb.Count > 0)
                         {
-                            listBox2.Items.Clear();
+                            exect_res_list.Items.Clear();
                             foreach (var item in bb)
                             {
-                                listBox2.Items.Add(item);
+                                exect_res_list.Items.Add(item);
                             }
                         }
                     }));
                     GC.Collect(1, GCCollectionMode.Forced);
-                    await Task.Delay(60001);
+                    await Task.Delay((int)(time_out_num.Value * 60000));
                 }
             });
 
         }
-        private async void button2_Click(object sender, EventArgs e)
-        {
-            TLSharp.Core.FileSessionStore store = new TLSharp.Core.FileSessionStore();
-
-            client = new TelegramClient(api_id, api_hash, store, "session");
-            await client.ConnectAsync();
-            if (!client.IsUserAuthorized())
-                hash = await client.SendCodeRequestAsync("+79162206436");
-
-
-
-        }
-
         private void use_telegram_chk_CheckedChanged(object sender, EventArgs e)
         {
+            DialogResult aa = DialogResult.None;
             if ((sender as CheckBox).Checked)
             {
                 if (client == null)
                 //if (client != null & !client.IsUserAuthorized())
                 {
                     TelegramAuth ta = new TelegramAuth();
-                    ta.ShowDialog();
+                    aa = ta.ShowDialog();
                 }
                 else
                 {
-                    if(!client.IsUserAuthorized())
+                    if (!client.IsUserAuthorized())
                     {
                         TelegramAuth ta = new TelegramAuth();
-                        ta.ShowDialog();
+                        aa = ta.ShowDialog();
                     }
                 }
             }
-        }
-    }
-    public class DataCalender
-    {
-        public List<ItemSc> data { get; set; }
-    }
-    public partial class DataUser
-    {
-        [JsonProperty("success")]
-        public bool Success { get; set; }
-
-        [JsonProperty("data")]
-        public ItemUser Data { get; set; }
-    }
-    public class ItemSc
-    {
-        public string Key { get; set; }
-        public int Id { get; set; }
-        public DateTime start_date { get; set; }
-        public DateTime end_date { get; set; }
-        public int EmployeeId { get; set; }
-        public string EmployeeName { get; set; }
-        public int State { get; set; }
-        public bool Completed { get; set; }
-        public override string ToString()
-        {
-            return $"{EmployeeName} :: {start_date}";
-        }
-    }
-    public class ItemUser
-    {
-        [JsonProperty("Surname")]
-        public string Surname { get; set; }
-
-        [JsonProperty("Name")]
-        public string Name { get; set; }
-
-        [JsonProperty("Patronymic")]
-        public string Patronymic { get; set; }
-
-        [JsonProperty("SchoolName")]
-        public string SchoolName { get; set; }
-
-        [JsonProperty("SchoolLogoUrl")]
-        public string SchoolLogoUrl { get; set; }
-
-        [JsonProperty("AllowDrive")]
-        public bool AllowDrive { get; set; }
-
-        [JsonProperty("Balance")]
-        public long Balance { get; set; }
-
-        [JsonProperty("MethodicProgress")]
-        public long MethodicProgress { get; set; }
-
-        [JsonProperty("NextDriveDateLocal")]
-        public DateTimeOffset NextDriveDateLocal { get; set; }
-
-        [JsonProperty("GroupName")]
-        public string GroupName { get; set; }
-
-        [JsonProperty("Category")]
-        public string Category { get; set; }
-
-        [JsonProperty("Autodromes")]
-        public List<Autodrome> Autodromes { get; set; }
-
-        public partial class Autodrome
-        {
-            [JsonProperty("Id")]
-            public long Id { get; set; }
-
-            [JsonProperty("Name")]
-            public string Name { get; set; }
-            public override string ToString()
+            if(aa != DialogResult.OK)
             {
-                return $"{Id} {Name}";
+                use_telegram_chk.CheckedChanged -= use_telegram_chk_CheckedChanged;
+                use_telegram_chk.Checked = false;
+                use_telegram_chk.CheckedChanged += use_telegram_chk_CheckedChanged;
+            }
+        }
+
+        //добавитть удаление
+        private void autodrom_list_chk_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void autodrom_list_chk_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            selected_autodrom_list.Items.Clear();
+            foreach (var item in autodrom_list_chk.CheckedItems)
+            {
+                selected_autodrom_list.Items.Add(item);
+            }
+            if (e.NewValue == CheckState.Checked)
+            {
+                selected_autodrom_list.Items.Add(autodrom_list_chk.Items[e.Index]);
+            }
+            else
+            {
+                selected_autodrom_list.Items.Remove(autodrom_list_chk.Items[e.Index]);
             }
         }
     }

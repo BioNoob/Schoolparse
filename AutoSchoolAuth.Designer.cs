@@ -95,16 +95,18 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(158, 139);
-            this.ControlBox = false;
             this.Controls.Add(this.status_lbl);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.pass_txt);
             this.Controls.Add(this.login_txt);
             this.Controls.Add(this.login_btn);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "AutoSchoolAuth";
-            this.Text = "AutoSchoolAuth";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "Вход в автошколу";
             this.ResumeLayout(false);
             this.PerformLayout();
 

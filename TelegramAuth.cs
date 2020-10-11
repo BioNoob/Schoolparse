@@ -113,12 +113,18 @@ namespace Schoolparse
             status_lbl.Text = "Авторизация завершена..";
             StaticInfo.Do_LoginTelegram(client, botClient);
             await Task.Delay(1000);
+            this.DialogResult = DialogResult.OK;
             this.Close();
         }
         private void phone_num_mtxt_TextChanged(object sender, EventArgs e)
         {
             if (phone_num_mtxt.MaskCompleted)
                 start_auth_telegram_btn.Enabled = true;
+        }
+
+        private void TelegramAuth_FormClosed(object sender, FormClosedEventArgs e)
+        {
+           
         }
     }
 }

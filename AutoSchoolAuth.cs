@@ -53,6 +53,7 @@ namespace Schoolparse
                 var signupFormId = formNode.GetAttributeValue("value", "");
                 var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
                 var abb = $"__RequestVerificationToken={signupFormId}; {aa};";
+                StaticInfo.VeriToken = abb;
                 wc.Headers.Add(HttpRequestHeader.Cookie, abb);
                 plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
                 try
