@@ -1,5 +1,4 @@
-﻿using HtmlAgilityPack;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -7,12 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Telegram.Bot;
-using TeleSharp.TL;
-using TeleSharp.TL.Messages;
 using TLSharp.Core;
 
 namespace Schoolparse
@@ -26,8 +23,11 @@ namespace Schoolparse
         //int api_id = 1929836;
         //string api_hash = "71b59f552c59293894b11ee9479ff72f";
         TelegramBotClient botClient;
-        //string hash;
-        bool fl_to_stop = false;
+        CancellationTokenSource tokenSource = new CancellationTokenSource();
+        CancellationToken token;
+        System.Windows.Forms.Timer work_timer = new System.Windows.Forms.Timer();
+        DateTime start_time;
+        List<ItemDrive> ConfirmItems { get; set; }
 
         public StartForm()
         {
@@ -41,9 +41,25 @@ namespace Schoolparse
             AutoSchoolAuth au = new AutoSchoolAuth();
             au.ShowDialog();
             stop_btn.Enabled = false;
+            end_time_dtp.Value = DateTime.Now.AddDays(7);
+            token = tokenSource.Token;
+            time_filter_dtp.Checked = false;
+            work_timer.Interval = 100;
+            work_timer.Tick += Work_timer_Tick;
+
         }
 
-        private void StaticInfo_Ev_LoginSchool(DataUser dp)
+        private void Work_timer_Tick(object sender, EventArgs e)
+        {
+            BeginInvoke(new Action(() =>
+                {
+                    var a = (DateTime.Now - start_time);
+                    work_time_lbl.Text = String.Format("{0:00}:{1:00}:{2:00}",a.Hours,a.Minutes,a.Seconds);
+                }
+                ));
+        }
+
+        private async void StaticInfo_Ev_LoginSchool(DataUser dp)
         {
             var dta = dp.Data;
             if (dp != null)
@@ -51,8 +67,7 @@ namespace Schoolparse
                 fio_lbl.Text = dta.Name + " " + dta.Surname + " " + dta.Patronymic;
                 group_lbl.Text = dta.GroupName;
                 school_name_lbl.Text = dta.SchoolName;
-                if (!string.IsNullOrEmpty(dta.SchoolLogoUrl))
-                    school_img.BackgroundImage = GetImage(dta.SchoolLogoUrl);
+
                 theory_progress_lbl.Text = dta.MethodicProgress.ToString();
                 category_lbl.Text = dta.Category;
                 drive_status_lbl.Text = dta.AllowDrive ? "Да" : "Нет";
@@ -64,19 +79,25 @@ namespace Schoolparse
                     autodrom_list_chk.Items.Add(item);
                 }
                 this.Visible = true;
+                if (!string.IsNullOrEmpty(dta.SchoolLogoUrl))
+                    school_img.BackgroundImage = await GetImage(dta.SchoolLogoUrl);
             }
         }
-        public Image GetImage(string imageUrl)
+        public async Task<Image> GetImage(string imageUrl)
         {
+            Bitmap bitmap = null;
             if (string.IsNullOrEmpty(imageUrl))
                 return null;
-            WebClient client = new WebClient();
-            Stream stream = client.OpenRead(imageUrl);
-            Bitmap bitmap; bitmap = new Bitmap(stream);
+            await Task.Run(() =>
+            {
+                WebClient client = new WebClient();
+                Stream stream = client.OpenRead(imageUrl);
+                bitmap = new Bitmap(stream);
+                stream.Flush();
+                stream.Close();
+                client.Dispose();
+            });
 
-            stream.Flush();
-            stream.Close();
-            client.Dispose();
             if (bitmap != null)
             {
                 return bitmap;
@@ -92,13 +113,16 @@ namespace Schoolparse
                 telegram_status_lbl.Text = "Телеграм успешно подключен";
         }
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
+        //SEEEEEEEEEEEEEEEEEE https://tlgrm.ru/docs/bots/api
         private void button1_Click(object sender, EventArgs e)
         {
-            fl_to_stop = false;
+            //fl_to_stop = false;
+            ConfirmItems = new List<ItemDrive>();
             button1.Enabled = false;
             stop_btn.Enabled = true;
             use_telegram_chk.Enabled = false;
             not_use_sound_chk.Enabled = false;
+            bool checked_use_time = time_filter_dtp.Checked;
             if (start_time_dtp.Value > DateTime.Now)
             {
                 if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -106,7 +130,9 @@ namespace Schoolparse
                     return;
                 }
             }
-            DateTime dt_telegram_start = DateTime.Now;
+
+            DateTime dt_telegram_start = start_time = DateTime.Now;
+            work_timer.Start();
             string dt_st = start_time_dtp.Value.ToString("yyyy-MM-dd");
             string dt_en = end_time_dtp.Value.ToString("yyyy-MM-dd");
             string famtecher = fio_teacher_txt.Text;
@@ -118,39 +144,37 @@ namespace Schoolparse
             {
                 while (true)
                 {
-                    if (fl_to_stop)
-                    {
-                        BeginInvoke(new Action(() =>
-                        {
-                            button1.Enabled = true;
-                            use_telegram_chk.Enabled = true;
-                            not_use_sound_chk.Enabled = true;
-                            stop_btn.Enabled = false;
-                            return;
-                        }
-                        ));
-                    }
-
                     i++;
                     wc.Headers.Clear();
                     wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
                     var t = wc.DownloadString($"https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from={dt_st}&to={dt_en}");
                     zs = JsonConvert.DeserializeObject<DataCalender>(t);
 
-                    var bb = zs.data.Where(q => q.Completed != true && q.start_date.DayOfYear > start_time_dtp.Value.DayOfYear).ToList();
-                    bb = bb.Where(q => q.EmployeeName.Contains(famtecher)).ToList();
+                    zs.data = zs.data.Where(q => q.Completed != true && /*q.State != 1 &&*/ q.start_date.DayOfYear > start_time_dtp.Value.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                    var bb = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
+                    foreach (var item in ConfirmItems)
+                    {
+                        if (bb.Contains(item)) 
+                            bb.Remove(item);
+                    }
                     if (selected_autodrom_list.Items.Count > 0)
                     {
-                        //выборка из листа указанных площадок по айди
+                        //фильтр площадок по айди
                         foreach (var item in selected_autodrom_list.Items)
                         {
                             var ii = item as ItemUser.Autodrome;
                             bb = bb.Where(q => q.autodrom == ii.Id).ToList();
                         }
                     }
+                    //тут будет фильтр времени
+                    if(checked_use_time)
+                    {
+                        bb = bb.Where(q => q.start_date.TimeOfDay >= time_filter_dtp.Value.TimeOfDay).ToList();
+                    }
+
+
                     if (bb.Count > 0)
                     {
-                        //AALLLEEERT!!
                         if (!not_use_sound_chk.Checked)
                         {
                             smm.Stop();
@@ -195,7 +219,7 @@ namespace Schoolparse
                     GC.Collect(1, GCCollectionMode.Forced);
                     await Task.Delay((int)(time_out_num.Value * 60000));
                 }
-            });
+            }, token);
 
         }
         private void use_telegram_chk_CheckedChanged(object sender, EventArgs e)
@@ -251,7 +275,24 @@ namespace Schoolparse
 
         private void stop_btn_Click(object sender, EventArgs e)
         {
-            fl_to_stop = true;
+            //fl_to_stop = true;
+            tokenSource.Cancel();
+            BeginInvoke(new Action(() =>
+            {
+                smm.Stop();
+                button1.Enabled = true;
+                use_telegram_chk.Enabled = true;
+                not_use_sound_chk.Enabled = true;
+                stop_btn.Enabled = false;
+                work_timer.Stop();
+                return;
+            }));
+        }
+
+        private void see_btn_Click(object sender, EventArgs e)
+        {
+            ConfirmItems.AddRange(exect_res_list.Items.Cast<ItemDrive>());
+            exect_res_list.Items.Clear();
         }
     }
 }

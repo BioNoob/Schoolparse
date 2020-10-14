@@ -19,7 +19,7 @@ namespace Schoolparse
         public static event LoginTelegram Ev_LoginTelegram;
         public static void Do_LoginTelegram(TelegramClient state, TelegramBotClient bot)
         {
-            Ev_LoginTelegram?.Invoke(state,bot);
+            Ev_LoginTelegram?.Invoke(state, bot);
         }
         public static string VeriToken = string.Empty;
     }
@@ -35,7 +35,7 @@ namespace Schoolparse
         [JsonProperty("data")]
         public ItemUser Data { get; set; }
     }
-    public class ItemDrive
+    public class ItemDrive : IEquatable<ItemDrive>
     {
         public string Key { get; set; }
         public int Id { get; set; }
@@ -50,6 +50,24 @@ namespace Schoolparse
         public override string ToString()
         {
             return $"{EmployeeName} :: {start_date}";
+        }
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as ItemDrive);
+        }
+
+        public bool Equals(ItemDrive other)
+        {
+            if (other == null)
+                return false;
+            if (Key == other.Key & Id == other.Id & start_date == other.start_date & end_date == other.end_date &
+                EmployeeId == other.EmployeeId & EmployeeName == other.EmployeeName & State == other.State &
+                Completed == other.Completed & autodrom == other.autodrom)
+            {
+                return true;
+            }
+            else
+                return false;
         }
     }
     public class ItemUser

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Schoolparse
@@ -11,15 +12,23 @@ namespace Schoolparse
     public partial class AutoSchoolAuth : Form
     {
         WebClient wc = new WebClient();
+        DataUser plochadki_class = new DataUser();
         public AutoSchoolAuth()
         {
             InitializeComponent();
             wc.Encoding = System.Text.Encoding.UTF8;
+            this.FormClosed += AutoSchoolAuth_FormClosed;
         }
 
-        private void login_btn_Click(object sender, EventArgs e)
+        private void AutoSchoolAuth_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            StaticInfo.Do_LoginSchool(plochadki_class);
+        }
+
+        private async void login_btn_Click(object sender, EventArgs e)
         {
             wc.Headers.Clear();
+            pictureBox1.Visible = true;
             var request = (HttpWebRequest)WebRequest.Create("https://app.dscontrol.ru/Login");
             var postData = $"Login={login_txt.Text}";
             postData += "&TextPassword=";
@@ -32,47 +41,67 @@ namespace Schoolparse
             request.ContentLength = data.Length;
             request.Accept = "*/*";
             request.Referer = "https://app.dscontrol.ru/login";
-            using (var stream = request.GetRequestStream())
+            await Task.Run(() =>
             {
-                stream.Write(data, 0, data.Length);
-            }
-            var response = (HttpWebResponse)request.GetResponse();
-            var aa = response.Headers["Set-Cookie"].Split(';')[0];
-            var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
-            DataUser plochadki_class = new DataUser();
-            string plochadki = string.Empty;
-            try
-            {
-                var zs = JsonConvert.DeserializeObject<DataCalender>(za);
-            }
-            catch (Exception)
-            {
-                HtmlAgilityPack.HtmlDocument hd = new HtmlAgilityPack.HtmlDocument();
-                hd.LoadHtml(za);
-                HtmlNode formNode = hd.DocumentNode.SelectSingleNode("//input[@name='__RequestVerificationToken']");
-                var signupFormId = formNode.GetAttributeValue("value", "");
-                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                var abb = $"__RequestVerificationToken={signupFormId}; {aa};";
-                StaticInfo.VeriToken = abb;
-                wc.Headers.Add(HttpRequestHeader.Cookie, abb);
-                plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
+                using (var stream = request.GetRequestStream())
+                {
+                    stream.Write(data, 0, data.Length);
+                }
+                HttpWebResponse response;
                 try
                 {
-                    plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
-                    StaticInfo.Do_LoginSchool(plochadki_class);
-                    this.Close();
-                    return;
+                    response = (HttpWebResponse)request.GetResponse();
                 }
                 catch (Exception)
                 {
-                    status_lbl.Text = "Ошибка логина";
+                    BeginInvoke(new Action(() => pictureBox1.Visible = false));
+                    BeginInvoke(new Action(() => status_lbl.Text = "Ошибка логина"));
+                    return;
                 }
 
-            }
-            plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
-            plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
-            StaticInfo.Do_LoginSchool(plochadki_class);
-            this.Close();
+                var aa = response.Headers["Set-Cookie"].Split(';')[0];
+                var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
+
+                string plochadki = string.Empty;
+                try
+                {
+                    var zs = JsonConvert.DeserializeObject<DataCalender>(za);
+                    plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
+                    plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
+                }
+                catch (Exception)
+                {
+                    HtmlAgilityPack.HtmlDocument hd = new HtmlAgilityPack.HtmlDocument();
+                    hd.LoadHtml(za);
+                    HtmlNode formNode = hd.DocumentNode.SelectSingleNode("//input[@name='__RequestVerificationToken']");
+                    var signupFormId = formNode.GetAttributeValue("value", "");
+                    var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    var abb = $"__RequestVerificationToken={signupFormId}; {aa};";
+                    StaticInfo.VeriToken = abb;
+                    wc.Headers.Add(HttpRequestHeader.Cookie, abb);
+                    plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
+                    try
+                    {
+                        plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
+                    }
+                    catch (Exception)
+                    {
+                        BeginInvoke(new Action(() => pictureBox1.Visible = false));
+                        BeginInvoke(new Action(() => status_lbl.Text = "Ошибка логина"));
+                        return;
+                    }
+                }
+            });
+            if (plochadki_class.Success)
+                DoEnd(plochadki_class);
+        }
+        private void DoEnd(DataUser dt)
+        {
+            BeginInvoke(new Action(() =>
+            {
+                //pictureBox1.Visible = false;
+                this.Close();
+            }));
         }
     }
 }
