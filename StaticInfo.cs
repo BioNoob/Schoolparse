@@ -23,6 +23,28 @@ namespace Schoolparse
         }
         public static string VeriToken = string.Empty;
     }
+    public class FilterSettings
+    {
+        public DateTime DateStart { get; set; }
+        public DateTime DateEnd { get; set; }
+        public DateTime TimeStart { get; set; }
+        public List<ItemUser.Autodrome> SelectedAutodromes { get; set; }
+        public string TeacherLast { get; set; }
+        public override string ToString()
+        {
+            string drome = "";
+            foreach (var item in SelectedAutodromes)
+            {
+                drome += item.Name + "\n";
+            }
+            if (SelectedAutodromes.Count < 1)
+                drome = "Все";
+
+            return $"Дата начала {DateStart.ToString("dd.MM")}\nДата конца {DateEnd.ToString("dd.MM")}\n" +
+                $"Время старта занятия больше чем {TimeStart.TimeOfDay}\nВыбранные площадки {drome}\n" +
+                $"Искомая фамилия учителя \"{TeacherLast}\"";
+        }
+    }
     public class DataCalender
     {
         public List<ItemDrive> data { get; set; }

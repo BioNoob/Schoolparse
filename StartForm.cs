@@ -46,7 +46,15 @@ namespace Schoolparse
             time_filter_dtp.Checked = false;
             work_timer.Interval = 100;
             work_timer.Tick += Work_timer_Tick;
+            this.FormClosed += StartForm_FormClosed;
+        }
 
+        private void StartForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if(botClient.IsReceiving)
+            {
+                botClient.StopReceiving();
+            }
         }
 
         private void Work_timer_Tick(object sender, EventArgs e)
@@ -54,7 +62,7 @@ namespace Schoolparse
             BeginInvoke(new Action(() =>
                 {
                     var a = (DateTime.Now - start_time);
-                    work_time_lbl.Text = String.Format("{0:00}:{1:00}:{2:00}",a.Hours,a.Minutes,a.Seconds);
+                    work_time_lbl.Text = string.Format("{0:00}:{1:00}:{2:00}",a.Hours,a.Minutes,a.Seconds);
                 }
                 ));
         }
@@ -109,9 +117,49 @@ namespace Schoolparse
         {
             client = state;
             botClient = bot;
+            botClient.OnMessage += BotClient_OnMessage;
+            botClient.StartReceiving();
             if (client.IsConnected && client.IsUserAuthorized())
                 telegram_status_lbl.Text = "Телеграм успешно подключен";
         }
+        //Добавил класс настроек, надо заюзать! Добавить инвок ниже, обработка если бот в бане на логин бота. добавть через ботфазера коммандыф которые ниже
+        private async void BotClient_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
+        {
+            var z = e.Message;
+            if(z.From.Id == client.Session.TLUser.Id)
+            {
+                if(z.Text == "/start")
+                {   
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id,"Привет, я твой оповещатор!\nМои команды:\n" +
+                        "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
+                        "/stop_watch - Остановлю работу программы парсер\n" +
+                        "/go_watch - Запущу программу парсер дальше\n" +
+                        "/get_settings - Отправлю текущие настройки парсера");
+                    //добавить команды базовых настроек фильтра (дата,время, фамилия)
+                }
+                if (z.Text == "/i_got_it")
+                {
+                    see_btn.PerformClick();
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Понял. Не спамлю, ищу дальше)");
+                }
+                if (z.Text == "/stop_watch")
+                {
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я остановил парсер!");
+                    stop_btn.PerformClick();
+                }
+                if (z.Text == "/go_watch")
+                {
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я запустил парсер в работу");
+                    button1.PerformClick();
+                }
+                if (z.Text == "/get_settings")
+                {
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, $"Я запустил парсер в работу");
+                    button1.PerformClick();
+                }
+            }
+        }
+
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
         //SEEEEEEEEEEEEEEEEEE https://tlgrm.ru/docs/bots/api
         private void button1_Click(object sender, EventArgs e)

@@ -59,6 +59,8 @@
             this.telega_time_out_num = new System.Windows.Forms.NumericUpDown();
             this.label11 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label18 = new System.Windows.Forms.Label();
+            this.time_filter_dtp = new System.Windows.Forms.DateTimePicker();
             this.fio_teacher_txt = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
@@ -71,16 +73,14 @@
             this.not_use_sound_chk = new System.Windows.Forms.CheckBox();
             this.label13 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.see_btn = new System.Windows.Forms.Button();
             this.label19 = new System.Windows.Forms.Label();
             this.work_time_lbl = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
             this.stop_btn = new System.Windows.Forms.Button();
             this.time_out_num = new System.Windows.Forms.NumericUpDown();
-            this.time_filter_dtp = new System.Windows.Forms.DateTimePicker();
-            this.see_btn = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.label18 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.school_img)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -416,6 +416,25 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Фильтры оповещения";
             // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(6, 124);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(93, 13);
+            this.label18.TabIndex = 18;
+            this.label18.Text = "Время, не позже";
+            // 
+            // time_filter_dtp
+            // 
+            this.time_filter_dtp.Format = System.Windows.Forms.DateTimePickerFormat.Time;
+            this.time_filter_dtp.Location = new System.Drawing.Point(6, 140);
+            this.time_filter_dtp.Name = "time_filter_dtp";
+            this.time_filter_dtp.ShowCheckBox = true;
+            this.time_filter_dtp.ShowUpDown = true;
+            this.time_filter_dtp.Size = new System.Drawing.Size(170, 20);
+            this.time_filter_dtp.TabIndex = 17;
+            // 
             // fio_teacher_txt
             // 
             this.fio_teacher_txt.Location = new System.Drawing.Point(6, 272);
@@ -531,6 +550,16 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Результаты";
             // 
+            // see_btn
+            // 
+            this.see_btn.Location = new System.Drawing.Point(9, 198);
+            this.see_btn.Name = "see_btn";
+            this.see_btn.Size = new System.Drawing.Size(86, 68);
+            this.see_btn.TabIndex = 9;
+            this.see_btn.Text = "Проверил";
+            this.see_btn.UseVisualStyleBackColor = true;
+            this.see_btn.Click += new System.EventHandler(this.see_btn_Click);
+            // 
             // label19
             // 
             this.label19.AutoSize = true;
@@ -593,26 +622,6 @@
             0,
             0});
             // 
-            // time_filter_dtp
-            // 
-            this.time_filter_dtp.Format = System.Windows.Forms.DateTimePickerFormat.Time;
-            this.time_filter_dtp.Location = new System.Drawing.Point(6, 140);
-            this.time_filter_dtp.Name = "time_filter_dtp";
-            this.time_filter_dtp.ShowCheckBox = true;
-            this.time_filter_dtp.ShowUpDown = true;
-            this.time_filter_dtp.Size = new System.Drawing.Size(170, 20);
-            this.time_filter_dtp.TabIndex = 17;
-            // 
-            // see_btn
-            // 
-            this.see_btn.Location = new System.Drawing.Point(9, 198);
-            this.see_btn.Name = "see_btn";
-            this.see_btn.Size = new System.Drawing.Size(86, 68);
-            this.see_btn.TabIndex = 9;
-            this.see_btn.Text = "Проверил";
-            this.see_btn.UseVisualStyleBackColor = true;
-            this.see_btn.Click += new System.EventHandler(this.see_btn_Click);
-            // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.time_out_num);
@@ -624,15 +633,6 @@
             this.groupBox5.TabIndex = 16;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Настройки парсера";
-            // 
-            // label18
-            // 
-            this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(6, 124);
-            this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(93, 13);
-            this.label18.TabIndex = 18;
-            this.label18.Text = "Время, не позже";
             // 
             // StartForm
             // 
