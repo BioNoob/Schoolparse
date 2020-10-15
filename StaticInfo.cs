@@ -15,19 +15,24 @@ namespace Schoolparse
             Ev_LoginSchool?.Invoke(dp);
         }
 
-        public delegate void LoginTelegram(TelegramClient state, TelegramBotClient bot);
+        public delegate void LoginTelegram(TelegramClient state, TelegBotWithID bot);
         public static event LoginTelegram Ev_LoginTelegram;
-        public static void Do_LoginTelegram(TelegramClient state, TelegramBotClient bot)
+        public static void Do_LoginTelegram(TelegramClient state, TelegBotWithID bot)
         {
             Ev_LoginTelegram?.Invoke(state, bot);
         }
         public static string VeriToken = string.Empty;
     }
+    public class TelegBotWithID
+    {
+        public TelegramBotClient BotClient {get;set;}
+        public int BotChatID { get; set; }
+    }
     public class FilterSettings
     {
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
-        public DateTime TimeStart { get; set; }
+        public TimeSpan TimeStart { get; set; }
         public List<ItemUser.Autodrome> SelectedAutodromes { get; set; }
         public string TeacherLast { get; set; }
         public override string ToString()
@@ -41,7 +46,7 @@ namespace Schoolparse
                 drome = "Все";
 
             return $"Дата начала {DateStart.ToString("dd.MM")}\nДата конца {DateEnd.ToString("dd.MM")}\n" +
-                $"Время старта занятия больше чем {TimeStart.TimeOfDay}\nВыбранные площадки {drome}\n" +
+                $"Время старта занятия больше чем {string.Format("{0:00}:{1:00}:{2:00}",TimeStart.Hours,TimeStart.Minutes,TimeStart.Seconds)}\nВыбранные площадки \"{drome}\"\n" +
                 $"Искомая фамилия учителя \"{TeacherLast}\"";
         }
     }

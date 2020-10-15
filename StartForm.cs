@@ -10,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Telegram.Bot;
+using TeleSharp.TL;
+using TeleSharp.TL.Messages;
 using TLSharp.Core;
 
 namespace Schoolparse
@@ -20,14 +22,13 @@ namespace Schoolparse
         System.Media.SoundPlayer smm = new System.Media.SoundPlayer();
         WebClient wc = new WebClient();
         TelegramClient client;
-        //int api_id = 1929836;
-        //string api_hash = "71b59f552c59293894b11ee9479ff72f";
         TelegramBotClient botClient;
         CancellationTokenSource tokenSource = new CancellationTokenSource();
         CancellationToken token;
         System.Windows.Forms.Timer work_timer = new System.Windows.Forms.Timer();
         DateTime start_time;
         List<ItemDrive> ConfirmItems { get; set; }
+        int dialog_bot_user_id = 0;
 
         public StartForm()
         {
@@ -41,6 +42,7 @@ namespace Schoolparse
             AutoSchoolAuth au = new AutoSchoolAuth();
             au.ShowDialog();
             stop_btn.Enabled = false;
+            see_btn.Enabled = false;
             end_time_dtp.Value = DateTime.Now.AddDays(7);
             token = tokenSource.Token;
             time_filter_dtp.Checked = false;
@@ -51,20 +53,43 @@ namespace Schoolparse
 
         private void StartForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if(botClient.IsReceiving)
+            if (botClient.IsReceiving)
             {
                 botClient.StopReceiving();
             }
         }
-
-        private void Work_timer_Tick(object sender, EventArgs e)
+        DateTime dt_telegram_start;
+        List<ItemDrive> FilteredList;
+        private async void Work_timer_Tick(object sender, EventArgs e)
         {
             BeginInvoke(new Action(() =>
                 {
                     var a = (DateTime.Now - start_time);
-                    work_time_lbl.Text = string.Format("{0:00}:{1:00}:{2:00}",a.Hours,a.Minutes,a.Seconds);
+                    work_time_lbl.Text = string.Format("{0:00}:{1:00}:{2:00}", a.Hours, a.Minutes, a.Seconds);
                 }
                 ));
+
+            //telega time + out list
+            if (use_telegram_chk.Checked)
+            {
+                var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
+                if ((int)teleg_time >= telega_time_out_num.Value)
+                {
+                    var str = "";
+                    foreach (var item in FilteredList)
+                    {
+                        str += $"{item}\n";
+                    }
+                    if (dialog_bot_user_id != 0)
+                    {
+                        await botClient.SendTextMessageAsync(dialog_bot_user_id, $"Внимание найдены доступные записи!\n");
+                        await botClient.SendTextMessageAsync(dialog_bot_user_id, str);
+                        dt_telegram_start = DateTime.Now;
+                    }
+
+                }
+            }
+
         }
 
         private async void StaticInfo_Ev_LoginSchool(DataUser dp)
@@ -113,24 +138,29 @@ namespace Schoolparse
             else
                 return null;
         }
-        private void StaticInfo_Ev_LoginTelegram(TelegramClient state, TelegramBotClient bot)
+        private void StaticInfo_Ev_LoginTelegram(TelegramClient state, TelegBotWithID bot)
         {
             client = state;
-            botClient = bot;
+            botClient = bot.BotClient;
+            dialog_bot_user_id = bot.BotChatID;
             botClient.OnMessage += BotClient_OnMessage;
             botClient.StartReceiving();
             if (client.IsConnected && client.IsUserAuthorized())
+            {
                 telegram_status_lbl.Text = "Телеграм успешно подключен";
+            }
+
+
         }
         //Добавил класс настроек, надо заюзать! Добавить инвок ниже, обработка если бот в бане на логин бота. добавть через ботфазера коммандыф которые ниже
         private async void BotClient_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
         {
             var z = e.Message;
-            if(z.From.Id == client.Session.TLUser.Id)
+            if (z.From.Id == client.Session.TLUser.Id)
             {
-                if(z.Text == "/start")
-                {   
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id,"Привет, я твой оповещатор!\nМои команды:\n" +
+                if (z.Text == "/start" || z.Text == "/help")
+                {
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Привет, я твой оповещатор!\nМои команды:\n" +
                         "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
                         "/stop_watch - Остановлю работу программы парсер\n" +
                         "/go_watch - Запущу программу парсер дальше\n" +
@@ -139,38 +169,83 @@ namespace Schoolparse
                 }
                 if (z.Text == "/i_got_it")
                 {
-                    see_btn.PerformClick();
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Понял. Не спамлю, ищу дальше)");
+                    if (see_btn.Enabled)
+                    {
+                        BeginInvoke(new Action(() => see_btn.PerformClick()));
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Понял. Не спамлю, ищу дальше)");
+                    }
+                    else
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я не работаю(");
                 }
                 if (z.Text == "/stop_watch")
                 {
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я остановил парсер!");
-                    stop_btn.PerformClick();
+                    if (stop_btn.Enabled)
+                    {
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я остановил парсер!");
+                        BeginInvoke(new Action(() => stop_btn.PerformClick()));
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я уже остановлен..");
+                    }
+
                 }
                 if (z.Text == "/go_watch")
                 {
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я запустил парсер в работу");
-                    button1.PerformClick();
+                    if (button1.Enabled)
+                    {
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я запустил парсер в работу");
+                        BeginInvoke(new Action(() => button1.PerformClick()));
+                    }
+                    else
+                    {
+                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я уже работаю..");
+                    }
+
                 }
                 if (z.Text == "/get_settings")
                 {
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, $"Я запустил парсер в работу");
-                    button1.PerformClick();
+                    GetSettings();
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, filterSettings.ToString());
+                }
+                if(z.Text == "/hi_again")
+                {
+                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "И снова здаравствуй!");
                 }
             }
         }
 
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
         //SEEEEEEEEEEEEEEEEEE https://tlgrm.ru/docs/bots/api
+        FilterSettings filterSettings = new FilterSettings();
+        void GetSettings()
+        {
+            filterSettings.DateEnd = end_time_dtp.Value;
+            filterSettings.DateStart = start_time_dtp.Value;
+            if (only_end_chk.Checked)
+            {
+                filterSettings.DateStart = filterSettings.DateEnd;
+            }
+            filterSettings.TeacherLast = fio_teacher_txt.Text;
+            filterSettings.TimeStart = time_filter_dtp.Value.TimeOfDay;
+            filterSettings.SelectedAutodromes = selected_autodrom_list.Items.Cast<ItemUser.Autodrome>().ToList();
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             //fl_to_stop = false;
             ConfirmItems = new List<ItemDrive>();
+            FilteredList = new List<ItemDrive>();
             button1.Enabled = false;
             stop_btn.Enabled = true;
             use_telegram_chk.Enabled = false;
             not_use_sound_chk.Enabled = false;
-            bool checked_use_time = time_filter_dtp.Checked;
+            see_btn.Enabled = true;
+            //bool checked_use_time = time_filter_dtp.Checked;
+            StartWork(time_filter_dtp.Checked);
+
+        }
+        public void StartWork(bool checked_use_time)
+        {
             if (start_time_dtp.Value > DateTime.Now)
             {
                 if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -178,14 +253,20 @@ namespace Schoolparse
                     return;
                 }
             }
+            GetSettings();
 
-            DateTime dt_telegram_start = start_time = DateTime.Now;
+            dt_telegram_start = start_time = DateTime.Now;
+
             work_timer.Start();
-            string dt_st = start_time_dtp.Value.ToString("yyyy-MM-dd");
-            string dt_en = end_time_dtp.Value.ToString("yyyy-MM-dd");
-            string famtecher = fio_teacher_txt.Text;
-            if (only_end_chk.Checked)
-                dt_st = dt_en;
+            string dt_st = filterSettings.DateStart.ToString("yyyy-MM-dd");
+            string dt_en = filterSettings.DateEnd.ToString("yyyy-MM-dd");
+            string famtecher = filterSettings.TeacherLast;
+
+            //if (only_end_chk.Checked)
+            //    dt_st = dt_en;
+
+
+
             int i = 0;
             DataCalender zs = new DataCalender();
             Task.Run(async () =>
@@ -199,52 +280,33 @@ namespace Schoolparse
                     zs = JsonConvert.DeserializeObject<DataCalender>(t);
 
                     zs.data = zs.data.Where(q => q.Completed != true && /*q.State != 1 &&*/ q.start_date.DayOfYear > start_time_dtp.Value.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
-                    var bb = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
+                    FilteredList = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
                     foreach (var item in ConfirmItems)
                     {
-                        if (bb.Contains(item)) 
-                            bb.Remove(item);
+                        if (FilteredList.Contains(item))
+                            FilteredList.Remove(item);
                     }
-                    if (selected_autodrom_list.Items.Count > 0)
+                    if (filterSettings.SelectedAutodromes.Count > 0)
                     {
                         //фильтр площадок по айди
-                        foreach (var item in selected_autodrom_list.Items)
+                        foreach (var item in filterSettings.SelectedAutodromes)
                         {
-                            var ii = item as ItemUser.Autodrome;
-                            bb = bb.Where(q => q.autodrom == ii.Id).ToList();
+                            FilteredList = FilteredList.Where(q => q.autodrom == item.Id).ToList();
                         }
                     }
                     //тут будет фильтр времени
-                    if(checked_use_time)
+                    if (checked_use_time)
                     {
-                        bb = bb.Where(q => q.start_date.TimeOfDay >= time_filter_dtp.Value.TimeOfDay).ToList();
+                        FilteredList = FilteredList.Where(q => q.start_date.TimeOfDay >= filterSettings.TimeStart).ToList();
                     }
 
 
-                    if (bb.Count > 0)
+                    if (FilteredList.Count > 0)
                     {
                         if (!not_use_sound_chk.Checked)
                         {
                             smm.Stop();
                             smm.Play();
-                        }
-                        if (use_telegram_chk.Checked)
-                        {
-                            var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
-                            if ((int)teleg_time >= telega_time_out_num.Value)
-                            {
-                                var updbot = await botClient.GetUpdatesAsync();
-                                var userdialog = updbot.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
-                                var userdialog_id = userdialog.Message.Chat.Id;
-                                var str = "";
-                                foreach (var item in bb)
-                                {
-                                    str += $"{item}\n";
-                                }
-                                await botClient.SendTextMessageAsync(userdialog_id, $"Внимание найдены доступные записи!\n");
-                                await botClient.SendTextMessageAsync(userdialog_id, str);
-                                dt_telegram_start = DateTime.Now;
-                            }
                         }
                     }
                     BeginInvoke(new Action(() =>
@@ -255,10 +317,10 @@ namespace Schoolparse
                             all_res_list.Items.Add(item);
                         }
                         counter_lbl.Text = i.ToString();
-                        if (bb.Count > 0)
+                        if (FilteredList.Count > 0)
                         {
                             exect_res_list.Items.Clear();
-                            foreach (var item in bb)
+                            foreach (var item in FilteredList)
                             {
                                 exect_res_list.Items.Add(item);
                             }
@@ -268,7 +330,6 @@ namespace Schoolparse
                     await Task.Delay((int)(time_out_num.Value * 60000));
                 }
             }, token);
-
         }
         private void use_telegram_chk_CheckedChanged(object sender, EventArgs e)
         {
@@ -332,6 +393,7 @@ namespace Schoolparse
                 use_telegram_chk.Enabled = true;
                 not_use_sound_chk.Enabled = true;
                 stop_btn.Enabled = false;
+                see_btn.Enabled = false;
                 work_timer.Stop();
                 return;
             }));
@@ -339,8 +401,12 @@ namespace Schoolparse
 
         private void see_btn_Click(object sender, EventArgs e)
         {
-            ConfirmItems.AddRange(exect_res_list.Items.Cast<ItemDrive>());
-            exect_res_list.Items.Clear();
+            if (exect_res_list.Items.Count > 0)
+            {
+                ConfirmItems.AddRange(exect_res_list.Items.Cast<ItemDrive>());
+                exect_res_list.Items.Clear();
+            }
+
         }
     }
 }

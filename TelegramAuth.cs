@@ -25,7 +25,7 @@ namespace Schoolparse
             status_lbl.Text = "Запрос связи с ботом..";
         }
 
-        private  async void TelegramAuth_Load(object sender, EventArgs e)
+        private async void TelegramAuth_Load(object sender, EventArgs e)
         {
             BotId = await StartBot();
             if (BotId < 1)
@@ -36,7 +36,7 @@ namespace Schoolparse
             {
                 status_lbl.Text = "Бот запущен..\nВойдите в телеграм..";
             }
-            
+
         }
 
         private async Task<int> StartBot()
@@ -99,23 +99,48 @@ namespace Schoolparse
             var dialogsResult = (TLDialogs)await client.GetUserDialogsAsync();
             var users = dialogsResult.Users.OfType<TLUser>();
             var bot = users.FirstOrDefault(x => x.Id == botClient.BotId);
-            if (bot == null)
+            int dialID = 0;
+            //написал боту
+            TeleSharp.TL.Contacts.TLFound found = await this.client.SearchUserAsync("yasma_test_bot");
+            long hashs = ((TeleSharp.TL.TLUser)found.Users[0]).AccessHash.Value;
+            int id = ((TeleSharp.TL.TLUser)found.Users[0]).Id;
+            TeleSharp.TL.TLInputPeerUser peer = new TeleSharp.TL.TLInputPeerUser() { UserId = id, AccessHash = hashs };
+            try
             {
-                //написал боту
-                TeleSharp.TL.Contacts.TLFound found = await this.client.SearchUserAsync("yasma_test_bot");
-                long hashs = ((TeleSharp.TL.TLUser)found.Users[0]).AccessHash.Value;
-                int id = ((TeleSharp.TL.TLUser)found.Users[0]).Id;
-                TeleSharp.TL.TLInputPeerUser peer = new TeleSharp.TL.TLInputPeerUser() { UserId = id, AccessHash = hashs };
-                TeleSharp.TL.TLAbsUpdates up = await this.client.SendMessageAsync(peer, "/start");
-                status_lbl.Text = "Бот установил с вами контакт..";
+                if (bot == null)
+                {
+                    await this.client.SendMessageAsync(peer, "/start");
+                }
+                else
+                {
+                    await this.client.SendMessageAsync(peer, "/hi_again");
+                }
             }
+            catch (Exception)
+            {
+                MessageBox.Show("Похоже вы заблокировали бота!\nПустите его в свою жизнь @yasma_test_bot", "Внимание!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                status_lbl.Text = "Бот не может с вами связаться(";
+                return;
+            }
+
+            var w = await botClient.GetUpdatesAsync();
+            var userdialog = w.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
+            dialID = (int)userdialog.Message.Chat.Id;
+            status_lbl.Text = "Бот установил с вами контакт..";
             await Task.Delay(1000);
             status_lbl.Text = "Авторизация завершена..";
-            StaticInfo.Do_LoginTelegram(client, botClient);
+            StaticInfo.Do_LoginTelegram(client, new TelegBotWithID() { BotClient = botClient, BotChatID = dialID });
             await Task.Delay(1000);
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
+
+        //private void BotClient_OnReceiveError(object sender, Telegram.Bot.Args.ReceiveErrorEventArgs e)
+        //{
+        //    var z = e.ApiRequestException;
+        //    throw new NotImplementedException();
+        //}
+
         private void phone_num_mtxt_TextChanged(object sender, EventArgs e)
         {
             if (phone_num_mtxt.MaskCompleted)
@@ -124,7 +149,7 @@ namespace Schoolparse
 
         private void TelegramAuth_FormClosed(object sender, FormClosedEventArgs e)
         {
-           
+
         }
     }
 }
