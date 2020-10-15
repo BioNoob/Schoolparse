@@ -82,6 +82,7 @@
     <Compile Include="TelegramAuth.Designer.cs">
       <DependentUpon>TelegramAuth.cs</DependentUpon>
     </Compile>
+    <Compile Include="TelegramWorker.cs" />
     <EmbeddedResource Include="AutoSchoolAuth.resx">
       <DependentUpon>AutoSchoolAuth.cs</DependentUpon>
     </EmbeddedResource>
