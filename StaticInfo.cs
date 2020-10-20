@@ -15,11 +15,11 @@ namespace Schoolparse
             Ev_LoginSchool?.Invoke(dp);
         }
 
-        public delegate void LoginTelegram(TelegramClient state, TelegBotWithID bot);
+        public delegate void LoginTelegram(TelegramWorker tlw);
         public static event LoginTelegram Ev_LoginTelegram;
-        public static void Do_LoginTelegram(TelegramClient state, TelegBotWithID bot)
+        public static void Do_LoginTelegram(TelegramWorker tlw)
         {
-            Ev_LoginTelegram?.Invoke(state, bot);
+            Ev_LoginTelegram?.Invoke(tlw);
         }
         public static string VeriToken = string.Empty;
     }

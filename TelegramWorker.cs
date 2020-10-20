@@ -23,12 +23,12 @@ namespace Schoolparse
             denied
         }
 
-        public delegate void LoginHandler(LoginState state);
-        public event LoginHandler LoginEvent;
-        public delegate void LoginConfirmHandler(LoginState state);
-        public event LoginConfirmHandler LoginConfirmEvent;
-        public delegate void BotRunnerHandler(LoginState state);
-        public event BotRunnerHandler BotRunnerEvent;
+        //public delegate void LoginHandler(LoginState state);
+        //public event LoginHandler LoginEvent;
+        //public delegate void LoginConfirmHandler(LoginState state);
+        //public event LoginConfirmHandler LoginConfirmEvent;
+        public delegate void StartFullHandler(LoginState state);
+        public event StartFullHandler StartTelegrammEvent;
 
         TelegramClient TelClient { get; set; }
         TelegramBotClient TelBotClient { get; set; }
@@ -57,13 +57,10 @@ namespace Schoolparse
                 if (!TelClient.IsUserAuthorized())
                 {
                     SessionHash = await TelClient.SendCodeRequestAsync(phone_num);
-                    //status_lbl.Text = "Нужно подверждение..";
                     return LoginState.confirm_req;
                 }
                 else
                 {
-                    //status_lbl.Text = "Авторизация успешна..";
-                    //StartDialogBot();
                     CurrUser = TelClient.Session.TLUser;
                     return LoginState.success;
                 }
@@ -118,17 +115,16 @@ namespace Schoolparse
                 {
                     await TelClient.SendMessageAsync(peer, "/hi_again");
                 }
+                var w = await TelBotClient.GetUpdatesAsync();
+                var userdialog = w.Where(x => x.Message.From.Id == (int)CurrUser.Id).ToList().FirstOrDefault();
+                DialogBotUserID = (int)userdialog.Message.Chat.Id;
+                StartTelegrammEvent?.Invoke(LoginState.success);
             }
             catch (Exception)
             {
-                //MessageBox.Show("Похоже вы заблокировали бота!\nПустите его в свою жизнь @yasma_test_bot", "Внимание!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                //status_lbl.Text = "Бот не может с вами связаться(";
+                StartTelegrammEvent?.Invoke(LoginState.denied);
                 return;
             }
-
-            var w = await TelBotClient.GetUpdatesAsync();
-            var userdialog = w.Where(x => x.Message.From.Id == (int)CurrUser.Id).ToList().FirstOrDefault();
-            DialogBotUserID = (int)userdialog.Message.Chat.Id;
         }
         public async Task BotSendMess(string mess)
         {

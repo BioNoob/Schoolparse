@@ -138,7 +138,7 @@ namespace Schoolparse
             else
                 return null;
         }
-        private void StaticInfo_Ev_LoginTelegram(TelegramClient state, TelegBotWithID bot)
+        private void StaticInfo_Ev_LoginTelegram(TelegramWorker tlw)
         {
             client = state;
             botClient = bot.BotClient;

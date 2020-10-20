@@ -11,24 +11,50 @@ namespace Schoolparse
 {
     public partial class TelegramAuth : Form
     {
-        TelegramClient client;
-        int api_id = 1929836;
-        string api_hash = "71b59f552c59293894b11ee9479ff72f";
-        string hash = string.Empty;
-        int BotId = 0;
-        TelegramBotClient botClient = new TelegramBotClient("1364306156:AAGmMNZa1wOqL0LtKemcpYOYGEKXNvrJIpM");
+        //TelegramClient client;
+        //int api_id = 1929836;
+        //string api_hash = "71b59f552c59293894b11ee9479ff72f";
+        //string hash = string.Empty;
+        //int BotId = 0;
+        //TelegramBotClient botClient = new TelegramBotClient("1364306156:AAGmMNZa1wOqL0LtKemcpYOYGEKXNvrJIpM");
+        public TelegramWorker Tlw { get; set; }
         public TelegramAuth()
         {
             InitializeComponent();
+            Tlw = new TelegramWorker();
             start_auth_telegram_btn.Enabled = false;
             Load += TelegramAuth_Load;
             status_lbl.Text = "Запрос связи с ботом..";
+            Tlw.StartTelegrammEvent += Tlw_StartTelegrammEvent;
+        }
+
+        private async void Tlw_StartTelegrammEvent(TelegramWorker.LoginState state)
+        {
+            switch (state)
+            {
+                case TelegramWorker.LoginState.success:
+                    //var w = await botClient.GetUpdatesAsync();
+                    //var userdialog = w.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
+                    //dialID = (int)userdialog.Message.Chat.Id;
+                    status_lbl.Text = "Бот установил с вами контакт..";
+                    await Task.Delay(1000);
+                    status_lbl.Text = "Авторизация завершена..";
+                    StaticInfo.Do_LoginTelegram(client, new TelegBotWithID() { BotClient = botClient, BotChatID = dialID });
+                    await Task.Delay(1000);
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                    break;
+                case TelegramWorker.LoginState.denied:
+                    MessageBox.Show("Похоже вы заблокировали бота!\nПустите его в свою жизнь @yasma_test_bot", "Внимание!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    status_lbl.Text = "Бот не может с вами связаться(";
+                    break;
+
+            }
         }
 
         private async void TelegramAuth_Load(object sender, EventArgs e)
         {
-            BotId = await StartBot();
-            if (BotId < 1)
+            if (await Tlw.StartBot() == TelegramWorker.LoginState.denied)
             {
                 status_lbl.Text = "Связь с ботом не установлена..";
             }
@@ -38,108 +64,44 @@ namespace Schoolparse
             }
 
         }
-
-        private async Task<int> StartBot()
-        {
-            try
-            {
-                var me = await botClient.GetMeAsync();
-                return me.Id;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
         private async void start_auth_telegram_Click(object sender, EventArgs e)
         {
-            TLSharp.Core.FileSessionStore store = new TLSharp.Core.FileSessionStore();
-            client = new TelegramClient(api_id, api_hash, store, "session");
-            try
+            var state = await Tlw.ClientConneectAsync(phone_num_mtxt.Text);
+            switch (state)
             {
-                await client.ConnectAsync();
-                if (!client.IsUserAuthorized())
-                {
-                    hash = await client.SendCodeRequestAsync("+79162206436");
+                case TelegramWorker.LoginState.success:
+                    status_lbl.Text = "Авторизация успешна..";
+                    break;
+                case TelegramWorker.LoginState.confirm_req:
                     confirm_code_btn.Enabled = true;
                     telega_code_txt.Enabled = true;
                     status_lbl.Text = "Нужно подверждение..";
-                }
-                else
-                {
-                    status_lbl.Text = "Авторизация успешна..";
-                    StartDialogBot();
-                    //StaticInfo.Do_LoginTelegram(client, botClient);
-                }
-            }
-            catch (Exception)
-            {
-
-                throw;
+                    break;
+                case TelegramWorker.LoginState.denied:
+                    status_lbl.Text = "Ошибка авторизации..";
+                    break;
             }
         }
         private async void confirm_code_btn_Click(object sender, EventArgs e)
         {
-            var code = telega_code_txt.Text;  // this is a TextBox that you must insert the code that Telegram sent to you
             try
             {
-                var user = await client.MakeAuthAsync("+79162206436", hash, code);
-                status_lbl.Text = "Авторизация успешна..";
-                StartDialogBot();
-                //StaticInfo.Do_LoginTelegram(client, botClient);
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-        private async void StartDialogBot()
-        {
-            var dialogsResult = (TLDialogs)await client.GetUserDialogsAsync();
-            var users = dialogsResult.Users.OfType<TLUser>();
-            var bot = users.FirstOrDefault(x => x.Id == botClient.BotId);
-            int dialID = 0;
-            //написал боту
-            TeleSharp.TL.Contacts.TLFound found = await this.client.SearchUserAsync("yasma_test_bot");
-            long hashs = ((TeleSharp.TL.TLUser)found.Users[0]).AccessHash.Value;
-            int id = ((TeleSharp.TL.TLUser)found.Users[0]).Id;
-            TeleSharp.TL.TLInputPeerUser peer = new TeleSharp.TL.TLInputPeerUser() { UserId = id, AccessHash = hashs };
-            try
-            {
-                if (bot == null)
+                var state = await Tlw.SendClientCodeAsync(phone_num_mtxt.Text, telega_code_txt.Text);
+                switch (state)
                 {
-                    await this.client.SendMessageAsync(peer, "/start");
-                }
-                else
-                {
-                    await this.client.SendMessageAsync(peer, "/hi_again");
+                    case TelegramWorker.LoginState.success:
+                        status_lbl.Text = "Авторизация успешна..";
+                        break;
+                    case TelegramWorker.LoginState.denied:
+                        status_lbl.Text = "Ошибка авторизации кода..";
+                        break;
                 }
             }
             catch (Exception)
             {
-                MessageBox.Show("Похоже вы заблокировали бота!\nПустите его в свою жизнь @yasma_test_bot", "Внимание!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                status_lbl.Text = "Бот не может с вами связаться(";
-                return;
+                status_lbl.Text = "Ошибка авторизации кода..";
             }
-
-            var w = await botClient.GetUpdatesAsync();
-            var userdialog = w.Where(x => x.Message.From.Id == (int)client.Session.TLUser.Id).ToList().FirstOrDefault();
-            dialID = (int)userdialog.Message.Chat.Id;
-            status_lbl.Text = "Бот установил с вами контакт..";
-            await Task.Delay(1000);
-            status_lbl.Text = "Авторизация завершена..";
-            StaticInfo.Do_LoginTelegram(client, new TelegBotWithID() { BotClient = botClient, BotChatID = dialID });
-            await Task.Delay(1000);
-            this.DialogResult = DialogResult.OK;
-            this.Close();
         }
-
-        //private void BotClient_OnReceiveError(object sender, Telegram.Bot.Args.ReceiveErrorEventArgs e)
-        //{
-        //    var z = e.ApiRequestException;
-        //    throw new NotImplementedException();
-        //}
 
         private void phone_num_mtxt_TextChanged(object sender, EventArgs e)
         {
