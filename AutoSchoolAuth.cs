@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Newtonsoft.Json;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -84,8 +85,9 @@ namespace Schoolparse
                     {
                         plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        Debug.WriteLine(ex.Message);
                         BeginInvoke(new Action(() => pictureBox1.Visible = false));
                         BeginInvoke(new Action(() => status_lbl.Text = "Ошибка логина"));
                         return;

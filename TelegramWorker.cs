@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using TeleSharp.TL;
@@ -22,23 +23,28 @@ namespace Schoolparse
             confirm_req,
             denied
         }
-
-        //public delegate void LoginHandler(LoginState state);
-        //public event LoginHandler LoginEvent;
-        //public delegate void LoginConfirmHandler(LoginState state);
-        //public event LoginConfirmHandler LoginConfirmEvent;
+        public enum MessgeType
+        {
+            help,
+            start,
+            stop,
+            seen,
+            hi,
+            getsettings,
+            setsetting
+        }
         public delegate void StartFullHandler(LoginState state);
         public event StartFullHandler StartTelegrammEvent;
-
-        TelegramClient TelClient { get; set; }
-        TelegramBotClient TelBotClient { get; set; }
+        public delegate void BotMessgeRecive(MessgeType state);
+        public event BotMessgeRecive MessgeRecive;
+        public TelegramClient TelClient { get; set; }
+        public TelegramBotClient TelBotClient { get; set; }
         public TLUser CurrUser { get; set; }
         FileSessionStore TelSesStore { get; set; }
         public string SessionHash { get; set; }
-
         public int DialogBotUserID { get; set; }
-
-
+        private Timer timer { get; set; }
+        public string SendData { get; set; }
         public TelegramWorker()
         {
             TelSesStore = new FileSessionStore();
@@ -47,8 +53,19 @@ namespace Schoolparse
             TelBotClient.OnMessage += TelBotClient_OnMessage;
         }
 
-
-
+        public void StartTelegramMonitor(int timeout_min)
+        {
+            timer = new Timer(new TimerCallback(SendByTimer), null, 0, timeout_min * 60000);
+        }
+        public void StopTelegramMonitor()
+        {
+            timer.Dispose();
+        }
+        async void SendByTimer(object state)
+        {
+            if (!string.IsNullOrEmpty(SendData))
+                await BotSendMess($"Внимание найдены доступные записи!\n{SendData}");
+        }
         public async Task<LoginState> ClientConneectAsync(string phone_num)
         {
             try
@@ -118,6 +135,7 @@ namespace Schoolparse
                 var w = await TelBotClient.GetUpdatesAsync();
                 var userdialog = w.Where(x => x.Message.From.Id == (int)CurrUser.Id).ToList().FirstOrDefault();
                 DialogBotUserID = (int)userdialog.Message.Chat.Id;
+                TelBotClient.StartReceiving();
                 StartTelegrammEvent?.Invoke(LoginState.success);
             }
             catch (Exception)
@@ -126,68 +144,45 @@ namespace Schoolparse
                 return;
             }
         }
+        public void StopTelegramBot()
+        {
+            if (TelBotClient.IsReceiving)
+                TelBotClient.StopReceiving();
+        }
         public async Task BotSendMess(string mess)
         {
             await TelBotClient.SendTextMessageAsync(DialogBotUserID, mess);
         }
-        private async void TelBotClient_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
+        private void TelBotClient_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
         {
             var z = e.Message;
             if (z.From.Id == CurrUser.Id)
             {
                 if (z.Text == "/start" || z.Text == "/help")
                 {
-                    await BotSendMess("Привет, я твой оповещатор!\nМои команды:\n" +
-                        "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
-                        "/stop_watch - Остановлю работу программы парсер\n" +
-                        "/go_watch - Запущу программу парсер дальше\n" +
-                        "/get_settings - Отправлю текущие настройки парсера");
-                    //добавить команды базовых настроек фильтра (дата,время, фамилия)
+                    MessgeRecive?.Invoke(MessgeType.help);
                 }
                 if (z.Text == "/i_got_it")
                 {
-                    //if (see_btn.Enabled)
-                    //{
-                    //    BeginInvoke(new Action(() => see_btn.PerformClick()));
-                    await BotSendMess("Понял. Не спамлю, ищу дальше)");
-                    //}
-                    //else
-                    await BotSendMess("Я не работаю(");
+                    MessgeRecive?.Invoke(MessgeType.seen);
                 }
                 if (z.Text == "/stop_watch")
                 {
-                    // if (stop_btn.Enabled)
-                    //{
-                    await BotSendMess("Я остановил парсер!");
-                    //   BeginInvoke(new Action(() => stop_btn.PerformClick()));
-                    // }
-                    //else
-                    //{
-                    await BotSendMess("Я уже остановлен..");
-                    // }
+                    MessgeRecive?.Invoke(MessgeType.stop);
 
                 }
                 if (z.Text == "/go_watch")
                 {
-                    //if (button1.Enabled)
-                    //{
-                    await BotSendMess("Я запустил парсер в работу");
-                    //    BeginInvoke(new Action(() => button1.PerformClick()));
-                    //}
-                    //else
-                    //{
-                    await BotSendMess("Я уже работаю..");
-                    //}
+                    MessgeRecive?.Invoke(MessgeType.start);
 
                 }
                 if (z.Text == "/get_settings")
                 {
-                    //GetSettings();
-                    //await botClient.SendTextMessageAsync(e.Message.Chat.Id, filterSettings.ToString());
+                    MessgeRecive?.Invoke(MessgeType.getsettings);
                 }
                 if (z.Text == "/hi_again")
                 {
-                    await BotSendMess("И снова здаравствуй!");
+                    MessgeRecive?.Invoke(MessgeType.hi);
                 }
             }
         }

@@ -39,7 +39,7 @@ namespace Schoolparse
                     status_lbl.Text = "Бот установил с вами контакт..";
                     await Task.Delay(1000);
                     status_lbl.Text = "Авторизация завершена..";
-                    StaticInfo.Do_LoginTelegram(client, new TelegBotWithID() { BotClient = botClient, BotChatID = dialID });
+                    StaticInfo.Do_LoginTelegram(Tlw);
                     await Task.Delay(1000);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
@@ -71,6 +71,7 @@ namespace Schoolparse
             {
                 case TelegramWorker.LoginState.success:
                     status_lbl.Text = "Авторизация успешна..";
+                    await Tlw.BotClientHandshakeAsync();
                     break;
                 case TelegramWorker.LoginState.confirm_req:
                     confirm_code_btn.Enabled = true;
@@ -86,12 +87,15 @@ namespace Schoolparse
         {
             try
             {
+                confirm_code_btn.Enabled = false;
+                telega_code_txt.Enabled = false;
                 var state = await Tlw.SendClientCodeAsync(phone_num_mtxt.Text, telega_code_txt.Text);
                 switch (state)
                 {
                     case TelegramWorker.LoginState.success:
                         status_lbl.Text = "Авторизация успешна..";
-                        break;
+                        await Tlw.BotClientHandshakeAsync();
+                        return;
                     case TelegramWorker.LoginState.denied:
                         status_lbl.Text = "Ошибка авторизации кода..";
                         break;

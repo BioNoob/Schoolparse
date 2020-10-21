@@ -21,14 +21,13 @@ namespace Schoolparse
         static string ExPath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + "\\alarm.wav";
         System.Media.SoundPlayer smm = new System.Media.SoundPlayer();
         WebClient wc = new WebClient();
-        TelegramClient client;
-        TelegramBotClient botClient;
         CancellationTokenSource tokenSource = new CancellationTokenSource();
         CancellationToken token;
         System.Windows.Forms.Timer work_timer = new System.Windows.Forms.Timer();
         DateTime start_time;
         List<ItemDrive> ConfirmItems { get; set; }
-        int dialog_bot_user_id = 0;
+
+        TelegramWorker Tlw;
 
         public StartForm()
         {
@@ -51,16 +50,14 @@ namespace Schoolparse
             this.FormClosed += StartForm_FormClosed;
         }
 
+
         private void StartForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (botClient.IsReceiving)
-            {
-                botClient.StopReceiving();
-            }
+            Tlw.StopTelegramBot();
         }
         DateTime dt_telegram_start;
         List<ItemDrive> FilteredList;
-        private async void Work_timer_Tick(object sender, EventArgs e)
+        private void Work_timer_Tick(object sender, EventArgs e)
         {
             BeginInvoke(new Action(() =>
                 {
@@ -72,22 +69,24 @@ namespace Schoolparse
             //telega time + out list
             if (use_telegram_chk.Checked)
             {
-                var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
-                if ((int)teleg_time >= telega_time_out_num.Value)
-                {
-                    var str = "";
-                    foreach (var item in FilteredList)
-                    {
-                        str += $"{item}\n";
-                    }
-                    if (dialog_bot_user_id != 0)
-                    {
-                        await botClient.SendTextMessageAsync(dialog_bot_user_id, $"Внимание найдены доступные записи!\n");
-                        await botClient.SendTextMessageAsync(dialog_bot_user_id, str);
-                        dt_telegram_start = DateTime.Now;
-                    }
+                //var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
+                //if ((int)teleg_time >= telega_time_out_num.Value)
+                //{
 
+                string str = "";
+                foreach (var item in FilteredList)
+                {
+                    str += $"{item}\n";
                 }
+                Tlw.SendData = str;
+                //if (dialog_bot_user_id != 0)
+                //{
+                //    await botClient.SendTextMessageAsync(dialog_bot_user_id, $"Внимание найдены доступные записи!\n");
+                //    await botClient.SendTextMessageAsync(dialog_bot_user_id, str);
+                //    dt_telegram_start = DateTime.Now;
+                //}
+
+                //}
             }
 
         }
@@ -140,78 +139,65 @@ namespace Schoolparse
         }
         private void StaticInfo_Ev_LoginTelegram(TelegramWorker tlw)
         {
-            client = state;
-            botClient = bot.BotClient;
-            dialog_bot_user_id = bot.BotChatID;
-            botClient.OnMessage += BotClient_OnMessage;
-            botClient.StartReceiving();
-            if (client.IsConnected && client.IsUserAuthorized())
-            {
-                telegram_status_lbl.Text = "Телеграм успешно подключен";
-            }
-
-
+            Tlw = tlw;
+            telegram_status_lbl.Text = "Телеграм успешно подключен";
         }
-        //Добавил класс настроек, надо заюзать! Добавить инвок ниже, обработка если бот в бане на логин бота. добавть через ботфазера коммандыф которые ниже
-        private async void BotClient_OnMessage(object sender, Telegram.Bot.Args.MessageEventArgs e)
-        {
-            var z = e.Message;
-            if (z.From.Id == client.Session.TLUser.Id)
-            {
-                if (z.Text == "/start" || z.Text == "/help")
-                {
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Привет, я твой оповещатор!\nМои команды:\n" +
-                        "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
-                        "/stop_watch - Остановлю работу программы парсер\n" +
-                        "/go_watch - Запущу программу парсер дальше\n" +
-                        "/get_settings - Отправлю текущие настройки парсера");
-                    //добавить команды базовых настроек фильтра (дата,время, фамилия)
-                }
-                if (z.Text == "/i_got_it")
-                {
-                    if (see_btn.Enabled)
-                    {
-                        BeginInvoke(new Action(() => see_btn.PerformClick()));
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Понял. Не спамлю, ищу дальше)");
-                    }
-                    else
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я не работаю(");
-                }
-                if (z.Text == "/stop_watch")
-                {
-                    if (stop_btn.Enabled)
-                    {
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я остановил парсер!");
-                        BeginInvoke(new Action(() => stop_btn.PerformClick()));
-                    }
-                    else
-                    {
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я уже остановлен..");
-                    }
 
-                }
-                if (z.Text == "/go_watch")
-                {
+
+        private async void Tlw_MessgeRecive(TelegramWorker.MessgeType state)
+        {
+            switch (state)
+            {
+                case TelegramWorker.MessgeType.help:
+                    await Tlw.BotSendMess("Привет, я твой оповещатор!\nМои команды:\n" +
+    "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
+    "/stop_watch - Остановлю работу программы парсер\n" +
+    "/go_watch - Запущу программу парсер дальше\n" +
+    "/get_settings - Отправлю текущие настройки парсера");
+                    break;
+                case TelegramWorker.MessgeType.start:
                     if (button1.Enabled)
                     {
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я запустил парсер в работу");
+                        await Tlw.BotSendMess("Я запустил парсер в работу");
                         BeginInvoke(new Action(() => button1.PerformClick()));
                     }
                     else
                     {
-                        await botClient.SendTextMessageAsync(e.Message.Chat.Id, "Я уже работаю..");
+                        await Tlw.BotSendMess("Я уже работаю..");
                     }
-
-                }
-                if (z.Text == "/get_settings")
-                {
+                    break;
+                case TelegramWorker.MessgeType.stop:
+                    if (stop_btn.Enabled)
+                    {
+                        await Tlw.BotSendMess("Я остановил парсер!");
+                        BeginInvoke(new Action(() => stop_btn.PerformClick()));
+                    }
+                    else
+                    {
+                        await Tlw.BotSendMess("Я уже остановлен..");
+                    }
+                    break;
+                case TelegramWorker.MessgeType.seen:
+                    if (see_btn.Enabled)
+                    {
+                        BeginInvoke(new Action(() => see_btn.PerformClick()));
+                        await Tlw.BotSendMess("Понял. Не спамлю, ищу дальше)");
+                    }
+                    else
+                        await Tlw.BotSendMess("Я не работаю(");
+                    break;
+                case TelegramWorker.MessgeType.hi:
+                    await Tlw.BotSendMess("И снова здаравствуй!");
+                    break;
+                case TelegramWorker.MessgeType.getsettings:
                     GetSettings();
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, filterSettings.ToString());
-                }
-                if(z.Text == "/hi_again")
-                {
-                    await botClient.SendTextMessageAsync(e.Message.Chat.Id, "И снова здаравствуй!");
-                }
+                    await Tlw.BotSendMess(filterSettings.ToString());
+                    break;
+                case TelegramWorker.MessgeType.setsetting:
+                    break;
+                default:
+                    await Tlw.BotSendMess("Я не знаю таких комманд(");
+                    break;
             }
         }
 
@@ -266,7 +252,10 @@ namespace Schoolparse
             //    dt_st = dt_en;
 
 
-
+            if (use_telegram_chk.Checked)
+            {
+                Tlw.StartTelegramMonitor((int)telega_time_out_num.Value);
+            }
             int i = 0;
             DataCalender zs = new DataCalender();
             Task.Run(async () =>
@@ -327,7 +316,7 @@ namespace Schoolparse
                         }
                     }));
                     GC.Collect(1, GCCollectionMode.Forced);
-                    await Task.Delay((int)(time_out_num.Value * 60000));
+                    await Task.Delay((int)(time_out_num.Value * 59950)); //запас на телегу на 50 мил сек
                 }
             }, token);
         }
@@ -336,7 +325,7 @@ namespace Schoolparse
             DialogResult aa = DialogResult.None;
             if ((sender as CheckBox).Checked)
             {
-                if (client == null)
+                if (Tlw == null)
                 //if (client != null & !client.IsUserAuthorized())
                 {
                     TelegramAuth ta = new TelegramAuth();
@@ -344,7 +333,7 @@ namespace Schoolparse
                 }
                 else
                 {
-                    if (!client.IsUserAuthorized())
+                    if (!Tlw.TelClient.IsUserAuthorized())
                     {
                         TelegramAuth ta = new TelegramAuth();
                         aa = ta.ShowDialog();
@@ -356,6 +345,10 @@ namespace Schoolparse
                 use_telegram_chk.CheckedChanged -= use_telegram_chk_CheckedChanged;
                 use_telegram_chk.Checked = false;
                 use_telegram_chk.CheckedChanged += use_telegram_chk_CheckedChanged;
+            }
+            else
+            {
+                Tlw.MessgeRecive += Tlw_MessgeRecive;
             }
         }
 

@@ -125,6 +125,7 @@ namespace Schoolparse
 
         [JsonProperty("NextDriveDateLocal")]
         public DateTimeOffset NextDriveDateLocal { get; set; }
+        //!!!!!!!!!!!!!!!! NULL CHECK
 
         [JsonProperty("GroupName")]
         public string GroupName { get; set; }
