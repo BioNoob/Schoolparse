@@ -1,6 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using HtmlAgilityPack;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Text;
 using Telegram.Bot;
 using TLSharp.Core;
 
@@ -22,6 +27,77 @@ namespace Schoolparse
             Ev_LoginTelegram?.Invoke(tlw);
         }
         public static string VeriToken = string.Empty;
+        public enum LoginState
+        {
+            succ,
+            denied,
+            error
+        }
+        public static string login;
+        public static string pass;
+        public static LoginState Relogin()
+        {
+            WebClient wc = new WebClient();
+            DataUser plochadki_class = new DataUser();
+            wc.Encoding = Encoding.UTF8;
+            var request = (HttpWebRequest)WebRequest.Create("https://app.dscontrol.ru/Login");
+            var postData = $"Login={login}";
+            postData += "&TextPassword=";
+            byte[] bytes = Encoding.Default.GetBytes(pass);
+            postData += $"&Password={Encoding.UTF8.GetString(bytes)}";
+            postData += "&PreventPass=false";
+            var data = Encoding.ASCII.GetBytes(postData);
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+            request.ContentLength = data.Length;
+            request.Accept = "*/*";
+            request.Referer = "https://app.dscontrol.ru/login";
+            using (var stream = request.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+            }
+            HttpWebResponse response;
+            try
+            {
+                response = (HttpWebResponse)request.GetResponse();
+            }
+            catch (Exception)
+            {
+                return LoginState.denied;
+            }
+            var aa = response.Headers["Set-Cookie"].Split(';')[0];
+            var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
+
+            string plochadki = string.Empty;
+            try
+            {
+                var zs = JsonConvert.DeserializeObject<DataCalender>(za);
+                plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
+                plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
+            }
+            catch (Exception)
+            {
+                HtmlAgilityPack.HtmlDocument hd = new HtmlAgilityPack.HtmlDocument();
+                hd.LoadHtml(za);
+                HtmlNode formNode = hd.DocumentNode.SelectSingleNode("//input[@name='__RequestVerificationToken']");
+                var signupFormId = formNode.GetAttributeValue("value", "");
+                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                var abb = $"__RequestVerificationToken={signupFormId}; {aa};";
+                StaticInfo.VeriToken = abb;
+                wc.Headers.Add(HttpRequestHeader.Cookie, abb);
+                plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
+                try
+                {
+                    plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    return LoginState.error;
+                }
+            }
+            return LoginState.succ;
+        }
     }
     public class TelegBotWithID
     {
@@ -124,7 +200,7 @@ namespace Schoolparse
         public long MethodicProgress { get; set; }
 
         [JsonProperty("NextDriveDateLocal")]
-        public DateTimeOffset NextDriveDateLocal { get; set; }
+        public DateTime? NextDriveDateLocal { get; set; }
         //!!!!!!!!!!!!!!!! NULL CHECK
 
         [JsonProperty("GroupName")]

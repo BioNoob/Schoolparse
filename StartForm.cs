@@ -26,6 +26,7 @@ namespace Schoolparse
         System.Windows.Forms.Timer work_timer = new System.Windows.Forms.Timer();
         DateTime start_time;
         List<ItemDrive> ConfirmItems { get; set; }
+        public bool BotCommand = false;
 
         TelegramWorker Tlw;
 
@@ -160,6 +161,7 @@ namespace Schoolparse
                     {
                         await Tlw.BotSendMess("Я запустил парсер в работу");
                         BeginInvoke(new Action(() => button1.PerformClick()));
+                        BotCommand = true;
                     }
                     else
                     {
@@ -199,6 +201,7 @@ namespace Schoolparse
                     await Tlw.BotSendMess("Я не знаю таких комманд(");
                     break;
             }
+            BotCommand = false;
         }
 
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
@@ -232,13 +235,22 @@ namespace Schoolparse
         }
         public void StartWork(bool checked_use_time)
         {
-            if (start_time_dtp.Value > DateTime.Now)
+            if(!BotCommand)
             {
-                if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                if (start_time_dtp.Value < DateTime.Now)
                 {
-                    return;
+                    if (MessageBox.Show($"Выбранная дата {start_time_dtp.Value}\nРанее чем сегодняшняя.\nПродолжить поиск?", "Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    {
+                        button1.Enabled = true;
+                        use_telegram_chk.Enabled = true;
+                        not_use_sound_chk.Enabled = true;
+                        stop_btn.Enabled = false;
+                        see_btn.Enabled = false;
+                        return;
+                    }
                 }
             }
+
             GetSettings();
 
             dt_telegram_start = start_time = DateTime.Now;
@@ -247,7 +259,7 @@ namespace Schoolparse
             string dt_st = filterSettings.DateStart.ToString("yyyy-MM-dd");
             string dt_en = filterSettings.DateEnd.ToString("yyyy-MM-dd");
             string famtecher = filterSettings.TeacherLast;
-
+            string buf_response = string.Empty;
             //if (only_end_chk.Checked)
             //    dt_st = dt_en;
 
@@ -263,12 +275,40 @@ namespace Schoolparse
                 while (true)
                 {
                     i++;
-                    wc.Headers.Clear();
-                    wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
-                    var t = wc.DownloadString($"https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from={dt_st}&to={dt_en}");
-                    zs = JsonConvert.DeserializeObject<DataCalender>(t);
+                    try
+                    {
+                        wc.Headers.Clear();
+                        wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
+                        buf_response = wc.DownloadString($"https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from={dt_st}&to={dt_en}");
+                        zs = JsonConvert.DeserializeObject<DataCalender>(buf_response);
+                    }
+                    catch (Exception ex)
+                    { 
+                        if(StaticInfo.Relogin() != StaticInfo.LoginState.succ)
+                        {
+                            BeginInvoke(new Action(() =>
+                            {
+                                log_rich.AppendText($"Выбило из учетки, повторный логин провален\n");
+                                stop_btn.PerformClick();
+                            }));
 
-                    zs.data = zs.data.Where(q => q.Completed != true && /*q.State != 1 &&*/ q.start_date.DayOfYear > start_time_dtp.Value.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                            return;
+                        }
+                        var bb = "";
+                        if(string.IsNullOrEmpty(buf_response))
+                        {
+                            bb = buf_response;
+                        }
+                        BeginInvoke(new Action(() =>
+                        {
+                            log_rich.AppendText($"Ошибка {ex.Message}! Тип {ex.InnerException}\nОтвет был {bb}\n");
+                        }));
+                    }
+
+                    var cnt = zs.data.Count;
+
+                    zs.data = zs.data.Where(q => q.Completed != true && /*q.State != 1 &&*/ q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                    var cnt2 = cnt - zs.data.Count;
                     FilteredList = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
                     foreach (var item in ConfirmItems)
                     {
@@ -289,7 +329,6 @@ namespace Schoolparse
                         FilteredList = FilteredList.Where(q => q.start_date.TimeOfDay >= filterSettings.TimeStart).ToList();
                     }
 
-
                     if (FilteredList.Count > 0)
                     {
                         if (!not_use_sound_chk.Checked)
@@ -300,6 +339,12 @@ namespace Schoolparse
                     }
                     BeginInvoke(new Action(() =>
                     {
+                        log_rich.AppendText($"{work_time_lbl.Text} Найдено без фильтров {cnt}\n");
+                        log_rich.AppendText($"{work_time_lbl.Text} После первичного осталось {cnt - cnt2}\n");
+                        log_rich.AppendText($"{work_time_lbl.Text} И того осталось {FilteredList.Count}\n");
+                        //log_rich.AppendText(buf_response + "\n");
+                        log_rich.ScrollToCaret();
+
                         all_res_list.Items.Clear();
                         foreach (var item in zs.data)
                         {

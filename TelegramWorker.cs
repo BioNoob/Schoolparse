@@ -135,6 +135,19 @@ namespace Schoolparse
                 var w = await TelBotClient.GetUpdatesAsync();
                 var userdialog = w.Where(x => x.Message.From.Id == (int)CurrUser.Id).ToList().FirstOrDefault();
                 DialogBotUserID = (int)userdialog.Message.Chat.Id;
+                if (userdialog.Message.Text == "/hi_again")
+                {
+                    await BotSendMess("И снова здаравствуй!");
+                }
+                else if (userdialog.Message.Text == "/start")
+                {
+                    await BotSendMess("Привет, я твой оповещатор!\nМои команды:\n" +
+    "/i_got_it - Вы говорите мне что приняли мое оповещение. Я буду искать другие варианты. И оповещать вас о них!\n" +
+    "/stop_watch - Остановлю работу программы парсер\n" +
+    "/go_watch - Запущу программу парсер дальше\n" +
+    "/get_settings - Отправлю текущие настройки парсера");
+                }
+
                 TelBotClient.StartReceiving();
                 StartTelegrammEvent?.Invoke(LoginState.success);
             }

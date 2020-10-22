@@ -95,8 +95,14 @@ namespace Schoolparse
                 }
             });
             if (plochadki_class.Success)
+            {
+                StaticInfo.login = login_txt.Text;
+                StaticInfo.pass = pass_txt.Text;
                 DoEnd(plochadki_class);
+            }
+
         }
+
         private void DoEnd(DataUser dt)
         {
             BeginInvoke(new Action(() =>

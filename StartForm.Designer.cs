@@ -81,6 +81,8 @@
             this.stop_btn = new System.Windows.Forms.Button();
             this.time_out_num = new System.Windows.Forms.NumericUpDown();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.log_rich = new System.Windows.Forms.RichTextBox();
+            this.label20 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.school_img)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -534,6 +536,8 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.label20);
+            this.groupBox4.Controls.Add(this.log_rich);
             this.groupBox4.Controls.Add(this.see_btn);
             this.groupBox4.Controls.Add(this.label19);
             this.groupBox4.Controls.Add(this.work_time_lbl);
@@ -634,6 +638,23 @@
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Настройки парсера";
             // 
+            // log_rich
+            // 
+            this.log_rich.Location = new System.Drawing.Point(9, 334);
+            this.log_rich.Name = "log_rich";
+            this.log_rich.Size = new System.Drawing.Size(329, 116);
+            this.log_rich.TabIndex = 10;
+            this.log_rich.Text = "";
+            // 
+            // label20
+            // 
+            this.label20.AutoSize = true;
+            this.label20.Location = new System.Drawing.Point(6, 318);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(26, 13);
+            this.label20.TabIndex = 11;
+            this.label20.Text = "Лог";
+            // 
             // StartForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -722,6 +743,8 @@
         private System.Windows.Forms.Button see_btn;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.RichTextBox log_rich;
     }
 }
 
