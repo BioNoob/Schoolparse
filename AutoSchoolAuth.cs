@@ -61,7 +61,7 @@ namespace Schoolparse
                 }
 
                 var aa = response.Headers["Set-Cookie"].Split(';')[0];
-                var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
+                var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from=2020-10-01&to=2020-10-30");
 
                 string plochadki = string.Empty;
                 try

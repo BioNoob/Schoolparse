@@ -284,7 +284,7 @@ namespace Schoolparse
                     }
                     catch (Exception ex)
                     { 
-                        if(StaticInfo.Relogin() != StaticInfo.LoginState.succ)
+                        if(await StaticInfo.Relogin() != StaticInfo.LoginState.succ)
                         {
                             BeginInvoke(new Action(() =>
                             {
@@ -433,6 +433,7 @@ namespace Schoolparse
                 stop_btn.Enabled = false;
                 see_btn.Enabled = false;
                 work_timer.Stop();
+                Tlw.StopTelegramMonitor();
                 return;
             }));
         }
@@ -442,6 +443,11 @@ namespace Schoolparse
             if (exect_res_list.Items.Count > 0)
             {
                 ConfirmItems.AddRange(exect_res_list.Items.Cast<ItemDrive>());
+                foreach (var item in ConfirmItems)
+                {
+                    if (FilteredList.Contains(item))
+                        FilteredList.Remove(item);
+                }
                 exect_res_list.Items.Clear();
             }
 

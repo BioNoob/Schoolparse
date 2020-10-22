@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using Telegram.Bot;
 using TLSharp.Core;
 
@@ -35,7 +36,7 @@ namespace Schoolparse
         }
         public static string login;
         public static string pass;
-        public static LoginState Relogin()
+        public static async Task<LoginState> Relogin()
         {
             WebClient wc = new WebClient();
             DataUser plochadki_class = new DataUser();
