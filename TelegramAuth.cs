@@ -23,6 +23,7 @@ namespace Schoolparse
             InitializeComponent();
             Tlw = new TelegramWorker();
             start_auth_telegram_btn.Enabled = false;
+            phone_num_mtxt.Enabled = false;
             Load += TelegramAuth_Load;
             status_lbl.Text = "Запрос связи с ботом..";
             Tlw.StartTelegrammEvent += Tlw_StartTelegrammEvent;
@@ -61,11 +62,13 @@ namespace Schoolparse
             else
             {
                 status_lbl.Text = "Бот запущен..\nВойдите в телеграм..";
+                phone_num_mtxt.Enabled = true;
             }
 
         }
         private async void start_auth_telegram_Click(object sender, EventArgs e)
         {
+            start_auth_telegram_btn.Enabled = false;
             var state = await Tlw.ClientConneectAsync(phone_num_mtxt.Text);
             switch (state)
             {
@@ -82,6 +85,7 @@ namespace Schoolparse
                     status_lbl.Text = "Ошибка авторизации..";
                     break;
             }
+            start_auth_telegram_btn.Enabled = true;
         }
         private async void confirm_code_btn_Click(object sender, EventArgs e)
         {

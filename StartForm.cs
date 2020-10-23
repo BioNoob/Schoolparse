@@ -201,7 +201,6 @@ namespace Schoolparse
                     await Tlw.BotSendMess("Я не знаю таких комманд(");
                     break;
             }
-            BotCommand = false;
         }
 
         //student info theory https://app.dscontrol.ru/Api/StudentLessons?StudentId=433390
@@ -250,7 +249,7 @@ namespace Schoolparse
                     }
                 }
             }
-
+            BotCommand = false;
             GetSettings();
 
             dt_telegram_start = start_time = DateTime.Now;
@@ -294,6 +293,13 @@ namespace Schoolparse
 
                             return;
                         }
+                        else
+                        {
+                            BeginInvoke(new Action(() =>
+                            {
+                                log_rich.AppendText($"Выбило из учетки, повторный логин проведен\n");
+                            }));
+                        }
                         var bb = "";
                         if(string.IsNullOrEmpty(buf_response))
                         {
@@ -307,7 +313,7 @@ namespace Schoolparse
 
                     var cnt = zs.data.Count;
 
-                    zs.data = zs.data.Where(q => q.Completed != true && /*q.State != 1 &&*/ q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                    zs.data = zs.data.Where(q => q.Completed != true && q.State != 1 && q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
                     var cnt2 = cnt - zs.data.Count;
                     FilteredList = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
                     foreach (var item in ConfirmItems)
@@ -346,6 +352,7 @@ namespace Schoolparse
                         log_rich.ScrollToCaret();
 
                         all_res_list.Items.Clear();
+                        exect_res_list.Items.Clear();
                         foreach (var item in zs.data)
                         {
                             all_res_list.Items.Add(item);
@@ -440,6 +447,7 @@ namespace Schoolparse
 
         private void see_btn_Click(object sender, EventArgs e)
         {
+            smm.Stop();
             if (exect_res_list.Items.Count > 0)
             {
                 ConfirmItems.AddRange(exect_res_list.Items.Cast<ItemDrive>());
