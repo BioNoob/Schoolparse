@@ -45,6 +45,7 @@ namespace Schoolparse
         public int DialogBotUserID { get; set; }
         private Timer timer { get; set; }
         public string SendData { get; set; }
+        public bool IsListning { get; set; }
         public TelegramWorker()
         {
             TelSesStore = new FileSessionStore();
@@ -55,11 +56,13 @@ namespace Schoolparse
 
         public void StartTelegramMonitor(int timeout_min)
         {
+            IsListning = true;
             timer = new Timer(new TimerCallback(SendByTimer), null, 0, timeout_min * 60000);
         }
         public void StopTelegramMonitor()
         {
             timer.Dispose();
+            IsListning = false;
         }
         async void SendByTimer(object state)
         {

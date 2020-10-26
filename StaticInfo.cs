@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -149,6 +150,8 @@ namespace Schoolparse
         public string EmployeeName { get; set; }
         public int State { get; set; }
         public bool Completed { get; set; }
+        [JsonProperty("DriveSessionTypeId")]
+        public int DriveID { get; set; }
         [JsonProperty("AutodromeId")]
         public int autodrom { get; set; }
         public override string ToString()
@@ -212,7 +215,26 @@ namespace Schoolparse
 
         [JsonProperty("Autodromes")]
         public List<Autodrome> Autodromes { get; set; }
+        [JsonProperty("Wallets")]
+        public List<Wallet> Wallets { get; set; }
+        [JsonProperty("SessionTypes")]
+        public List<SessionType> SessionTypes { get; set; }
+        [JsonProperty("Tokens")]
+        public List<Token> Tokens { get; set; }
 
+        public void GetTotalDrive()
+        {
+            List<Token> asdf = new List<Token>();
+            foreach (var item in Wallets)
+            {
+                asdf.Add(Tokens.Where(t => t.Id == item.TokenId).ToList().FirstOrDefault());
+            }
+            foreach (var item in asdf)
+            {
+                SessionTypes.Where(t => t.Color == item.Color).Select(w=>w.Id).ToList();
+            }
+
+        }
         public partial class Autodrome
         {
             [JsonProperty("Id")]
@@ -224,6 +246,63 @@ namespace Schoolparse
             {
                 return $"{Id} {Name}";
             }
+        }
+        public partial class SessionType
+        {
+            [JsonProperty("Id")]
+            public long Id { get; set; }
+
+            [JsonProperty("Color")]
+            public string Color { get; set; }
+
+            [JsonProperty("Code")]
+            public string Code { get; set; }
+
+            [JsonProperty("Name")]
+            public string Name { get; set; }
+
+            [JsonProperty("IsDefault")]
+            public bool IsDefault { get; set; }
+
+            [JsonProperty("ForStudents")]
+            public bool ForStudents { get; set; }
+
+            [JsonProperty("Hidden")]
+            public bool Hidden { get; set; }
+        }
+        public partial class Token
+        {
+            [JsonProperty("Id")]
+            public long Id { get; set; }
+
+            [JsonProperty("Color")]
+            public string Color { get; set; }
+
+            [JsonProperty("Code")]
+            public string Code { get; set; }
+
+            [JsonProperty("Name")]
+            public string Name { get; set; }
+
+            [JsonProperty("Order")]
+            public long Order { get; set; }
+
+            [JsonProperty("Hidden")]
+            public bool Hidden { get; set; }
+
+            [JsonProperty("AllowAdd")]
+            public bool AllowAdd { get; set; }
+
+            [JsonProperty("AllowWriteOff")]
+            public bool AllowWriteOff { get; set; }
+        }
+        public partial class Wallet
+        {
+            [JsonProperty("TokenId")]
+            public long TokenId { get; set; }
+
+            [JsonProperty("Balance")]
+            public long Balance { get; set; }
         }
     }
 }

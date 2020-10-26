@@ -80,6 +80,12 @@ namespace Schoolparse
                     var abb = $"__RequestVerificationToken={signupFormId}; {aa};";
                     StaticInfo.VeriToken = abb;
                     wc.Headers.Add(HttpRequestHeader.Cookie, abb);
+
+                    //из токенов выбрать айди = валетовским айди
+                    //получить сешентайп с цветом равным выбранным токенам
+                    //лист сешнтайп айди = айди площадок при поиске
+
+
                     plochadki = wc.DownloadString("https://app.dscontrol.ru/api/MobilePersonalData");
                     try
                     {

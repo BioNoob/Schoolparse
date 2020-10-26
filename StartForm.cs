@@ -66,28 +66,14 @@ namespace Schoolparse
                     work_time_lbl.Text = string.Format("{0:00}:{1:00}:{2:00}", a.Hours, a.Minutes, a.Seconds);
                 }
                 ));
-
-            //telega time + out list
             if (use_telegram_chk.Checked)
             {
-                //var teleg_time = (DateTime.Now - dt_telegram_start).TotalMinutes;
-                //if ((int)teleg_time >= telega_time_out_num.Value)
-                //{
-
                 string str = "";
                 foreach (var item in FilteredList)
                 {
                     str += $"{item}\n";
                 }
                 Tlw.SendData = str;
-                //if (dialog_bot_user_id != 0)
-                //{
-                //    await botClient.SendTextMessageAsync(dialog_bot_user_id, $"Внимание найдены доступные записи!\n");
-                //    await botClient.SendTextMessageAsync(dialog_bot_user_id, str);
-                //    dt_telegram_start = DateTime.Now;
-                //}
-
-                //}
             }
 
         }
@@ -106,7 +92,6 @@ namespace Schoolparse
                 drive_status_lbl.Text = dta.AllowDrive ? "Да" : "Нет";
                 balance_lbl.Text = dta.Balance.ToString();
                 date_of_driving_lbl.Text = dta.NextDriveDateLocal.ToString();
-                //autodrom_list.DataSource = dta.Autodromes;
                 foreach (var item in dta.Autodromes)
                 {
                     autodrom_list_chk.Items.Add(item);
@@ -234,7 +219,7 @@ namespace Schoolparse
         }
         public void StartWork(bool checked_use_time)
         {
-            if(!BotCommand)
+            if (!BotCommand)
             {
                 if (start_time_dtp.Value < DateTime.Now)
                 {
@@ -282,8 +267,8 @@ namespace Schoolparse
                         zs = JsonConvert.DeserializeObject<DataCalender>(buf_response);
                     }
                     catch (Exception ex)
-                    { 
-                        if(await StaticInfo.Relogin() != StaticInfo.LoginState.succ)
+                    {
+                        if (await StaticInfo.Relogin() != StaticInfo.LoginState.succ)
                         {
                             BeginInvoke(new Action(() =>
                             {
@@ -301,7 +286,7 @@ namespace Schoolparse
                             }));
                         }
                         var bb = "";
-                        if(string.IsNullOrEmpty(buf_response))
+                        if (string.IsNullOrEmpty(buf_response))
                         {
                             bb = buf_response;
                         }
@@ -440,7 +425,8 @@ namespace Schoolparse
                 stop_btn.Enabled = false;
                 see_btn.Enabled = false;
                 work_timer.Stop();
-                Tlw.StopTelegramMonitor();
+                if (Tlw!=null &&  Tlw.IsListning)
+                    Tlw.StopTelegramMonitor();
                 return;
             }));
         }
