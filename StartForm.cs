@@ -54,7 +54,8 @@ namespace Schoolparse
 
         private void StartForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            Tlw.StopTelegramBot();
+            if (Tlw != null)
+                Tlw.StopTelegramBot();
         }
         DateTime dt_telegram_start;
         List<ItemDrive> FilteredList;
@@ -78,27 +79,30 @@ namespace Schoolparse
 
         }
 
+        ItemUser _LocalUser { get; set; }
+
         private async void StaticInfo_Ev_LoginSchool(DataUser dp)
         {
-            var dta = dp.Data;
+            _LocalUser = dp.Data;
             if (dp != null)
             {
-                fio_lbl.Text = dta.Name + " " + dta.Surname + " " + dta.Patronymic;
-                group_lbl.Text = dta.GroupName;
-                school_name_lbl.Text = dta.SchoolName;
+                fio_lbl.Text = _LocalUser.Name + " " + _LocalUser.Surname + " " + _LocalUser.Patronymic;
+                group_lbl.Text = _LocalUser.GroupName;
+                school_name_lbl.Text = _LocalUser.SchoolName;
 
-                theory_progress_lbl.Text = dta.MethodicProgress.ToString();
-                category_lbl.Text = dta.Category;
-                drive_status_lbl.Text = dta.AllowDrive ? "Да" : "Нет";
-                balance_lbl.Text = dta.Balance.ToString();
-                date_of_driving_lbl.Text = dta.NextDriveDateLocal.ToString();
-                foreach (var item in dta.Autodromes)
+                theory_progress_lbl.Text = _LocalUser.MethodicProgress.ToString();
+                category_lbl.Text = _LocalUser.Category;
+                drive_status_lbl.Text = _LocalUser.AllowDrive ? "Да" : "Нет";
+                balance_lbl.Text = _LocalUser.Balance.ToString();
+                date_of_driving_lbl.Text = _LocalUser.NextDriveDateLocal.ToString();
+                var b = _LocalUser.GetTotalDrive();
+                foreach (var item in b)
                 {
-                    autodrom_list_chk.Items.Add(item);
+                    autodrom_list_chk.Items.Add(item,true);
                 }
                 this.Visible = true;
-                if (!string.IsNullOrEmpty(dta.SchoolLogoUrl))
-                    school_img.BackgroundImage = await GetImage(dta.SchoolLogoUrl);
+                if (!string.IsNullOrEmpty(_LocalUser.SchoolLogoUrl))
+                    school_img.BackgroundImage = await GetImage(_LocalUser.SchoolLogoUrl);
             }
         }
         public async Task<Image> GetImage(string imageUrl)
@@ -201,7 +205,7 @@ namespace Schoolparse
             }
             filterSettings.TeacherLast = fio_teacher_txt.Text;
             filterSettings.TimeStart = time_filter_dtp.Value.TimeOfDay;
-            filterSettings.SelectedAutodromes = selected_autodrom_list.Items.Cast<ItemUser.Autodrome>().ToList();
+            filterSettings.SelectedAutodromes = selected_autodrom_list.Items.Cast<ItemUser.FilterDrome>().ToList();
         }
         private void button1_Click(object sender, EventArgs e)
         {
@@ -253,7 +257,6 @@ namespace Schoolparse
                 Tlw.StartTelegramMonitor((int)telega_time_out_num.Value);
             }
             int i = 0;
-            DataCalender zs = new DataCalender();
             Task.Run(async () =>
             {
                 while (true)
@@ -264,7 +267,7 @@ namespace Schoolparse
                         wc.Headers.Clear();
                         wc.Headers.Add(HttpRequestHeader.Cookie, StaticInfo.VeriToken);
                         buf_response = wc.DownloadString($"https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=false&timeshift=-360&from={dt_st}&to={dt_en}");
-                        zs = JsonConvert.DeserializeObject<DataCalender>(buf_response);
+                        _LocalUser.DriveData = JsonConvert.DeserializeObject<DataCalender>(buf_response);
                     }
                     catch (Exception ex)
                     {
@@ -296,11 +299,11 @@ namespace Schoolparse
                         }));
                     }
 
-                    var cnt = zs.data.Count;
+                    var cnt = _LocalUser.DriveData.data.Count;
 
-                    zs.data = zs.data.Where(q => q.Completed != true && q.State != 1 && q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
-                    var cnt2 = cnt - zs.data.Count;
-                    FilteredList = zs.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
+                    _LocalUser.DriveData.data = _LocalUser.DriveData.data.Where(q => q.Completed != true && q.State != 1 && q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                    var cnt2 = cnt - _LocalUser.DriveData.data.Count;
+                    FilteredList = _LocalUser.DriveData.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
                     foreach (var item in ConfirmItems)
                     {
                         if (FilteredList.Contains(item))
@@ -311,7 +314,7 @@ namespace Schoolparse
                         //фильтр площадок по айди
                         foreach (var item in filterSettings.SelectedAutodromes)
                         {
-                            FilteredList = FilteredList.Where(q => q.autodrom == item.Id).ToList();
+                            FilteredList = FilteredList.Where(q => q.DriveID == item.SessionId).ToList();
                         }
                     }
                     //тут будет фильтр времени
@@ -338,7 +341,7 @@ namespace Schoolparse
 
                         all_res_list.Items.Clear();
                         exect_res_list.Items.Clear();
-                        foreach (var item in zs.data)
+                        foreach (var item in _LocalUser.DriveData.data)
                         {
                             all_res_list.Items.Add(item);
                         }
@@ -425,7 +428,7 @@ namespace Schoolparse
                 stop_btn.Enabled = false;
                 see_btn.Enabled = false;
                 work_timer.Stop();
-                if (Tlw!=null &&  Tlw.IsListning)
+                if (Tlw != null && Tlw.IsListning)
                     Tlw.StopTelegramMonitor();
                 return;
             }));

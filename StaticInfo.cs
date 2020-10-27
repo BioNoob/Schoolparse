@@ -101,24 +101,19 @@ namespace Schoolparse
             return LoginState.succ;
         }
     }
-    public class TelegBotWithID
-    {
-        public TelegramBotClient BotClient {get;set;}
-        public int BotChatID { get; set; }
-    }
     public class FilterSettings
     {
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
         public TimeSpan TimeStart { get; set; }
-        public List<ItemUser.Autodrome> SelectedAutodromes { get; set; }
+        public List<ItemUser.FilterDrome> SelectedAutodromes { get; set; }
         public string TeacherLast { get; set; }
         public override string ToString()
         {
             string drome = "";
             foreach (var item in SelectedAutodromes)
             {
-                drome += item.Name + "\n";
+                drome += item.CodeName + "\n";
             }
             if (SelectedAutodromes.Count < 1)
                 drome = "Все";
@@ -221,19 +216,36 @@ namespace Schoolparse
         public List<SessionType> SessionTypes { get; set; }
         [JsonProperty("Tokens")]
         public List<Token> Tokens { get; set; }
-
-        public void GetTotalDrive()
+        [JsonIgnore]
+        public DataCalender DriveData { get; set; }
+        public List<FilterDrome> GetTotalDrive()
         {
             List<Token> asdf = new List<Token>();
+            List<FilterDrome> fd = new List<FilterDrome>();
             foreach (var item in Wallets)
             {
                 asdf.Add(Tokens.Where(t => t.Id == item.TokenId).ToList().FirstOrDefault());
             }
             foreach (var item in asdf)
             {
-                SessionTypes.Where(t => t.Color == item.Color).Select(w=>w.Id).ToList();
+                fd.Add(new FilterDrome() { WalletId = item.Id , CodeName = item.Code, Name = item.Name,
+                    SessionId = SessionTypes.Where(t => t.Color == item.Color).Select(w => w.Id).FirstOrDefault(),
+                    Hours =  Wallets.Where(t=>t.TokenId == item.Id).Select(t=>t.Balance).FirstOrDefault()});
+                //var b = SessionTypes.Where(t => t.Color == item.Color).Select(w=>w.Id).ToList();
             }
-
+            return fd;
+        }
+        public partial class FilterDrome
+        {
+            public long SessionId { get; set; }
+            public string CodeName { get; set; }
+            public string Name { get; set; }
+            public long WalletId { get; set; }
+            public double Hours { get; set; }
+            public override string ToString()
+            {
+                return $"{CodeName} {Hours}";// \"{Name}\"";
+            }
         }
         public partial class Autodrome
         {
@@ -302,7 +314,7 @@ namespace Schoolparse
             public long TokenId { get; set; }
 
             [JsonProperty("Balance")]
-            public long Balance { get; set; }
+            public double Balance { get; set; }
         }
     }
 }

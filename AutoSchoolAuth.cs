@@ -90,6 +90,7 @@ namespace Schoolparse
                     try
                     {
                         plochadki_class = JsonConvert.DeserializeObject<DataUser>(plochadki);
+                        //plochadki_class.Data.GetTotalDrive();
                     }
                     catch (Exception ex)
                     {

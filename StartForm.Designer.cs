@@ -37,6 +37,7 @@
             this.use_telegram_chk = new System.Windows.Forms.CheckBox();
             this.telegram_status_lbl = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.autodrom_list_chk = new System.Windows.Forms.CheckedListBox();
             this.label15 = new System.Windows.Forms.Label();
             this.category_lbl = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
@@ -82,7 +83,6 @@
             this.stop_btn = new System.Windows.Forms.Button();
             this.time_out_num = new System.Windows.Forms.NumericUpDown();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.autodrom_list_chk = new System.Windows.Forms.CheckedListBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.school_img)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -183,6 +183,17 @@
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Автошкола";
+            // 
+            // autodrom_list_chk
+            // 
+            this.autodrom_list_chk.FormattingEnabled = true;
+            this.autodrom_list_chk.HorizontalScrollbar = true;
+            this.autodrom_list_chk.Location = new System.Drawing.Point(226, 132);
+            this.autodrom_list_chk.Name = "autodrom_list_chk";
+            this.autodrom_list_chk.Size = new System.Drawing.Size(188, 109);
+            this.autodrom_list_chk.TabIndex = 8;
+            this.autodrom_list_chk.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.autodrom_list_chk_ItemCheck);
+            this.autodrom_list_chk.SelectedIndexChanged += new System.EventHandler(this.autodrom_list_chk_SelectedIndexChanged);
             // 
             // label15
             // 
@@ -302,11 +313,11 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(223, 113);
+            this.label5.Location = new System.Drawing.Point(225, 113);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(79, 13);
+            this.label5.Size = new System.Drawing.Size(170, 13);
             this.label5.TabIndex = 5;
-            this.label5.Text = "Площадки АШ";
+            this.label5.Text = "Доступные часы для площадок ";
             // 
             // drive_status_lbl
             // 
@@ -643,17 +654,6 @@
             this.groupBox5.TabIndex = 16;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Настройки парсера";
-            // 
-            // autodrom_list_chk
-            // 
-            this.autodrom_list_chk.FormattingEnabled = true;
-            this.autodrom_list_chk.HorizontalScrollbar = true;
-            this.autodrom_list_chk.Location = new System.Drawing.Point(226, 132);
-            this.autodrom_list_chk.Name = "autodrom_list_chk";
-            this.autodrom_list_chk.Size = new System.Drawing.Size(188, 109);
-            this.autodrom_list_chk.TabIndex = 8;
-            this.autodrom_list_chk.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.autodrom_list_chk_ItemCheck);
-            this.autodrom_list_chk.SelectedIndexChanged += new System.EventHandler(this.autodrom_list_chk_SelectedIndexChanged);
             // 
             // StartForm
             // 
