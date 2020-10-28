@@ -73,8 +73,6 @@
             this.not_use_sound_chk = new System.Windows.Forms.CheckBox();
             this.label13 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.label20 = new System.Windows.Forms.Label();
-            this.log_rich = new System.Windows.Forms.RichTextBox();
             this.see_btn = new System.Windows.Forms.Button();
             this.label19 = new System.Windows.Forms.Label();
             this.work_time_lbl = new System.Windows.Forms.Label();
@@ -83,6 +81,9 @@
             this.stop_btn = new System.Windows.Forms.Button();
             this.time_out_num = new System.Windows.Forms.NumericUpDown();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.not_filtered_list = new System.Windows.Forms.ListBox();
+            this.label20 = new System.Windows.Forms.Label();
+            this.log_rich = new System.Windows.Forms.RichTextBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.school_img)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -107,7 +108,7 @@
             // 
             this.all_res_list.FormattingEnabled = true;
             this.all_res_list.HorizontalScrollbar = true;
-            this.all_res_list.Location = new System.Drawing.Point(101, 16);
+            this.all_res_list.Location = new System.Drawing.Point(101, 137);
             this.all_res_list.Name = "all_res_list";
             this.all_res_list.Size = new System.Drawing.Size(237, 108);
             this.all_res_list.TabIndex = 1;
@@ -134,7 +135,7 @@
             this.exect_res_list.ForeColor = System.Drawing.Color.Red;
             this.exect_res_list.FormattingEnabled = true;
             this.exect_res_list.HorizontalScrollbar = true;
-            this.exect_res_list.Location = new System.Drawing.Point(101, 132);
+            this.exect_res_list.Location = new System.Drawing.Point(101, 259);
             this.exect_res_list.Name = "exect_res_list";
             this.exect_res_list.Size = new System.Drawing.Size(237, 134);
             this.exect_res_list.TabIndex = 4;
@@ -536,8 +537,9 @@
             // 
             // groupBox4
             // 
-            this.groupBox4.Controls.Add(this.label20);
             this.groupBox4.Controls.Add(this.log_rich);
+            this.groupBox4.Controls.Add(this.label20);
+            this.groupBox4.Controls.Add(this.not_filtered_list);
             this.groupBox4.Controls.Add(this.see_btn);
             this.groupBox4.Controls.Add(this.label19);
             this.groupBox4.Controls.Add(this.work_time_lbl);
@@ -554,26 +556,9 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Результаты";
             // 
-            // label20
-            // 
-            this.label20.AutoSize = true;
-            this.label20.Location = new System.Drawing.Point(6, 318);
-            this.label20.Name = "label20";
-            this.label20.Size = new System.Drawing.Size(26, 13);
-            this.label20.TabIndex = 11;
-            this.label20.Text = "Лог";
-            // 
-            // log_rich
-            // 
-            this.log_rich.Location = new System.Drawing.Point(9, 334);
-            this.log_rich.Name = "log_rich";
-            this.log_rich.Size = new System.Drawing.Size(329, 116);
-            this.log_rich.TabIndex = 10;
-            this.log_rich.Text = "";
-            // 
             // see_btn
             // 
-            this.see_btn.Location = new System.Drawing.Point(9, 198);
+            this.see_btn.Location = new System.Drawing.Point(9, 325);
             this.see_btn.Name = "see_btn";
             this.see_btn.Size = new System.Drawing.Size(86, 68);
             this.see_btn.TabIndex = 9;
@@ -600,7 +585,7 @@
             // 
             // label17
             // 
-            this.label17.Location = new System.Drawing.Point(6, 132);
+            this.label17.Location = new System.Drawing.Point(6, 259);
             this.label17.Name = "label17";
             this.label17.Size = new System.Drawing.Size(89, 37);
             this.label17.TabIndex = 6;
@@ -609,7 +594,7 @@
             // 
             // label16
             // 
-            this.label16.Location = new System.Drawing.Point(6, 16);
+            this.label16.Location = new System.Drawing.Point(6, 137);
             this.label16.Name = "label16";
             this.label16.Size = new System.Drawing.Size(89, 42);
             this.label16.TabIndex = 5;
@@ -654,6 +639,32 @@
             this.groupBox5.TabIndex = 16;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Настройки парсера";
+            // 
+            // not_filtered_list
+            // 
+            this.not_filtered_list.FormattingEnabled = true;
+            this.not_filtered_list.HorizontalScrollbar = true;
+            this.not_filtered_list.Location = new System.Drawing.Point(101, 19);
+            this.not_filtered_list.Name = "not_filtered_list";
+            this.not_filtered_list.Size = new System.Drawing.Size(237, 108);
+            this.not_filtered_list.TabIndex = 10;
+            // 
+            // label20
+            // 
+            this.label20.Location = new System.Drawing.Point(6, 19);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(89, 42);
+            this.label20.TabIndex = 11;
+            this.label20.Text = "Все варианты, без филтров";
+            this.label20.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // log_rich
+            // 
+            this.log_rich.Location = new System.Drawing.Point(9, 396);
+            this.log_rich.Name = "log_rich";
+            this.log_rich.Size = new System.Drawing.Size(329, 54);
+            this.log_rich.TabIndex = 12;
+            this.log_rich.Text = "";
             // 
             // StartForm
             // 
@@ -742,9 +753,10 @@
         private System.Windows.Forms.Button see_btn;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.GroupBox groupBox5;
-        private System.Windows.Forms.Label label20;
-        private System.Windows.Forms.RichTextBox log_rich;
         private System.Windows.Forms.CheckedListBox autodrom_list_chk;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.ListBox not_filtered_list;
+        private System.Windows.Forms.RichTextBox log_rich;
     }
 }
 

@@ -80,29 +80,34 @@ namespace Schoolparse
         }
 
         ItemUser _LocalUser { get; set; }
+        StaticInfo.LoginState _StateLocUser {get;set;}
 
-        private async void StaticInfo_Ev_LoginSchool(DataUser dp)
+        private async void StaticInfo_Ev_LoginSchool(DataUser dp, bool relog)
         {
             _LocalUser = dp.Data;
+            _StateLocUser = dp.Success;
             if (dp != null)
             {
                 fio_lbl.Text = _LocalUser.Name + " " + _LocalUser.Surname + " " + _LocalUser.Patronymic;
                 group_lbl.Text = _LocalUser.GroupName;
                 school_name_lbl.Text = _LocalUser.SchoolName;
-
                 theory_progress_lbl.Text = _LocalUser.MethodicProgress.ToString();
                 category_lbl.Text = _LocalUser.Category;
                 drive_status_lbl.Text = _LocalUser.AllowDrive ? "Да" : "Нет";
                 balance_lbl.Text = _LocalUser.Balance.ToString();
                 date_of_driving_lbl.Text = _LocalUser.NextDriveDateLocal.ToString();
-                var b = _LocalUser.GetTotalDrive();
-                foreach (var item in b)
+                if(!relog)
                 {
-                    autodrom_list_chk.Items.Add(item,true);
+                    var b = _LocalUser.GetTotalDrive;
+                    foreach (var item in b)
+                    {
+                        autodrom_list_chk.Items.Add(item, true);
+                    }
+                    this.Visible = true;
+                    if (!string.IsNullOrEmpty(_LocalUser.SchoolLogoUrl))
+                        school_img.BackgroundImage = await GetImage(_LocalUser.SchoolLogoUrl);
                 }
-                this.Visible = true;
-                if (!string.IsNullOrEmpty(_LocalUser.SchoolLogoUrl))
-                    school_img.BackgroundImage = await GetImage(_LocalUser.SchoolLogoUrl);
+
             }
         }
         public async Task<Image> GetImage(string imageUrl)
@@ -271,7 +276,8 @@ namespace Schoolparse
                     }
                     catch (Exception ex)
                     {
-                        if (await StaticInfo.Relogin() != StaticInfo.LoginState.succ)
+                        await StaticInfo.Relogin();
+                        if ( _StateLocUser != StaticInfo.LoginState.succ)
                         {
                             BeginInvoke(new Action(() =>
                             {
@@ -341,10 +347,24 @@ namespace Schoolparse
 
                         all_res_list.Items.Clear();
                         exect_res_list.Items.Clear();
+                        not_filtered_list.Items.Clear();
                         foreach (var item in _LocalUser.DriveData.data)
                         {
-                            all_res_list.Items.Add(item);
+                            not_filtered_list.Items.Add(item);
                         }
+                        var st = from aw in _LocalUser.GetTotalDrive
+                                 join bw in _LocalUser.DriveData.data
+                                 on aw.SessionId equals bw.DriveID
+                                 select bw;
+                        all_res_list.Items.AddRange(st.ToArray());
+
+                        //foreach (var item in _LocalUser.DriveData.data)
+                        //{
+                        //    _LocalUser.GetTotalDrive.Where(t=>t.SessionId == item.Drive
+                        //    if(item.DriveID != _LocalUser.)
+                        //}
+
+                        //all_res_list.Items.AddRange(_LocalUser.DriveData.data.Where(t=>t.));
                         counter_lbl.Text = i.ToString();
                         if (FilteredList.Count > 0)
                         {

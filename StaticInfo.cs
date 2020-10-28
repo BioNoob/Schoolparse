@@ -10,18 +10,22 @@ using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using TLSharp.Core;
+using static Schoolparse.StaticInfo;
 
 namespace Schoolparse
 {
     static public class StaticInfo
     {
-        public delegate void LoginSchool(DataUser dp);
+        public delegate void LoginSchool(DataUser dp, bool relog = false);
         public static event LoginSchool Ev_LoginSchool;
         public static void Do_LoginSchool(DataUser dp)
         {
             Ev_LoginSchool?.Invoke(dp);
         }
-
+        public static void Do_ReLoginSchool(DataUser dp)
+        {
+            Ev_LoginSchool?.Invoke(dp, true);
+        }
         public delegate void LoginTelegram(TelegramWorker tlw);
         public static event LoginTelegram Ev_LoginTelegram;
         public static void Do_LoginTelegram(TelegramWorker tlw)
@@ -37,7 +41,7 @@ namespace Schoolparse
         }
         public static string login;
         public static string pass;
-        public static async Task<LoginState> Relogin()
+        public static async Task<DataUser> Relogin()
         {
             WebClient wc = new WebClient();
             DataUser plochadki_class = new DataUser();
@@ -65,7 +69,8 @@ namespace Schoolparse
             }
             catch (Exception)
             {
-                return LoginState.denied;
+                plochadki_class.Success = LoginState.denied;
+                return plochadki_class;
             }
             var aa = response.Headers["Set-Cookie"].Split(';')[0];
             var za = wc.DownloadString("https://app.dscontrol.ru/Api/StudentSchedulerList?Kinds=D&OnlyMine=falsetimeshift=-360&from=2020-10-01&to=2020-10-30");
@@ -95,10 +100,12 @@ namespace Schoolparse
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                    return LoginState.error;
+                    plochadki_class.Success = LoginState.error;
+                    return plochadki_class;// LoginState.error;
                 }
             }
-            return LoginState.succ;
+            plochadki_class.Success = LoginState.succ;
+            return plochadki_class;
         }
     }
     public class FilterSettings
@@ -129,8 +136,8 @@ namespace Schoolparse
     }
     public partial class DataUser
     {
-        [JsonProperty("success")]
-        public bool Success { get; set; }
+        [JsonIgnore]
+        public LoginState Success { get; set; }
 
         [JsonProperty("data")]
         public ItemUser Data { get; set; }
@@ -218,22 +225,30 @@ namespace Schoolparse
         public List<Token> Tokens { get; set; }
         [JsonIgnore]
         public DataCalender DriveData { get; set; }
-        public List<FilterDrome> GetTotalDrive()
+        public List<FilterDrome> GetTotalDrive
         {
-            List<Token> asdf = new List<Token>();
-            List<FilterDrome> fd = new List<FilterDrome>();
-            foreach (var item in Wallets)
+            get
             {
-                asdf.Add(Tokens.Where(t => t.Id == item.TokenId).ToList().FirstOrDefault());
+                List<Token> asdf = new List<Token>();
+                List<FilterDrome> fd = new List<FilterDrome>();
+                foreach (var item in Wallets)
+                {
+                    asdf.Add(Tokens.Where(t => t.Id == item.TokenId).ToList().FirstOrDefault());
+                }
+                foreach (var item in asdf)
+                {
+                    fd.Add(new FilterDrome()
+                    {
+                        WalletId = item.Id,
+                        CodeName = item.Code,
+                        Name = item.Name,
+                        SessionId = SessionTypes.Where(t => t.Color == item.Color).Select(w => w.Id).FirstOrDefault(),
+                        Hours = Wallets.Where(t => t.TokenId == item.Id).Select(t => t.Balance).FirstOrDefault()
+                    });
+                    //var b = SessionTypes.Where(t => t.Color == item.Color).Select(w=>w.Id).ToList();
+                }
+                return fd;
             }
-            foreach (var item in asdf)
-            {
-                fd.Add(new FilterDrome() { WalletId = item.Id , CodeName = item.Code, Name = item.Name,
-                    SessionId = SessionTypes.Where(t => t.Color == item.Color).Select(w => w.Id).FirstOrDefault(),
-                    Hours =  Wallets.Where(t=>t.TokenId == item.Id).Select(t=>t.Balance).FirstOrDefault()});
-                //var b = SessionTypes.Where(t => t.Color == item.Color).Select(w=>w.Id).ToList();
-            }
-            return fd;
         }
         public partial class FilterDrome
         {
