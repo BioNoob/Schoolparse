@@ -57,7 +57,7 @@ namespace Schoolparse
         public void StartTelegramMonitor(int timeout_min)
         {
             IsListning = true;
-            timer = new Timer(new TimerCallback(SendByTimer), null, 0, timeout_min * 60000);
+            timer = new Timer(new TimerCallback(SendByTimer), null, 1000, timeout_min * 60000);
         }
         public void StopTelegramMonitor()
         {
