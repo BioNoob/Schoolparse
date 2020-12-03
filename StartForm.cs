@@ -307,7 +307,7 @@ namespace Schoolparse
 
                     var cnt = _LocalUser.DriveData.data.Count;
 
-                    _LocalUser.DriveData.data = _LocalUser.DriveData.data.Where(q => q.Completed != true && q.State != 1 && q.start_date.DayOfYear > filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
+                    _LocalUser.DriveData.data = _LocalUser.DriveData.data.Where(q => q.Completed != true && q.State != 1 && q.start_date.DayOfYear >= filterSettings.DateStart.DayOfYear).ToList(); //первыичный фильтр, завершено или нет, состояние 1 = записан, 2 = не записан, дата больше чем дата старта
                     var cnt2 = cnt - _LocalUser.DriveData.data.Count;
                     FilteredList = _LocalUser.DriveData.data.Where(q => q.EmployeeName.Contains(famtecher)).ToList(); //фильтр фамилии
                     foreach (var item in ConfirmItems)

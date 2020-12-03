@@ -59,9 +59,10 @@ namespace Schoolparse
             IsListning = true;
             timer = new Timer(new TimerCallback(SendByTimer), null, 1000, timeout_min * 60000);
         }
-        public void StopTelegramMonitor()
+        public async void StopTelegramMonitor()
         {
             timer.Dispose();
+            await BotSendMess("Сервер отключил парсер! Приходите ещё.\n");
             IsListning = false;
         }
         async void SendByTimer(object state)
